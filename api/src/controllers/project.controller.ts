@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
 import { Project } from '../entities/project.entity';
-import {ProjectService} from '../services/project.service';
+import { ProjectService } from '../services/project.service';
 
 @Controller('projects')
 export class ProjectController {
