@@ -1,5 +1,5 @@
 
-# Software Sustainability Dashboard (SOSD)
+# Software Sustainability Dashboard Backend (SOSD)
 
 This repository contains two main directories: `api` and `database`. The `database` directory includes a Docker Compose file for starting a MySQL container and a phpMyAdmin container, along with a database schema `sosd_schema`. The `api` directory contains a NestJS backend application.
 
