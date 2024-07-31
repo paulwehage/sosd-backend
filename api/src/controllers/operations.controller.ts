@@ -5,8 +5,15 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { OperationsService } from '../services/operations.service';
 import {
   AllowedMetricDto,
@@ -54,6 +61,27 @@ export class OperationsController {
     @Param('projectId') projectId: string,
   ): Promise<InfrastructureElementDto[]> {
     return this.operationsService.getInfrastructureElements(+projectId);
+  }
+
+  @Get('infrastructure-elements/by-tag')
+  @ApiOperation({
+    summary: 'Get infrastructure elements for a project filtered by tag',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Return infrastructure elements filtered by tag.',
+    type: [InfrastructureElementDto],
+  })
+  @ApiParam({ name: 'projectId', type: 'number' })
+  @ApiQuery({ name: 'tag', required: true, type: String })
+  async getInfrastructureElementsByTag(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Query('tag') tag: string,
+  ): Promise<InfrastructureElementDto[]> {
+    return this.operationsService.getInfrastructureElementsByTag(
+      projectId,
+      tag,
+    );
   }
 
   @Get('infrastructure-elements/:elementId')

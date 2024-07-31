@@ -305,6 +305,49 @@ export class OperationsService {
     };
   }
 
+  async getInfrastructureElementsByTag(
+    projectId: number,
+    tag: string,
+  ): Promise<InfrastructureElementDto[]> {
+    const elements =
+      await this.prismaService.operationsInfrastructureElement.findMany({
+        where: {
+          projectSdlcStep: {
+            projectId,
+            sdlcStep: { name: 'operations' },
+          },
+          tag: tag,
+        },
+        include: {
+          infrastructureService: {
+            include: {
+              cloudProvider: true,
+            },
+          },
+          metricValues: {
+            include: {
+              metricDefinition: true,
+            },
+          },
+        },
+      });
+
+    return elements.map((element) => ({
+      id: element.id,
+      name: element.infrastructureService.name,
+      type: element.infrastructureService.type,
+      cloudProvider: element.infrastructureService.cloudProvider.name,
+      tag: element.tag,
+      totalCo2: this.calculateTotalCo2(element.metricValues),
+      metrics: element.metricValues.map((mv) => ({
+        name: mv.metricDefinition.metricName,
+        value: this.getMetricValue(mv),
+        dataType: mv.metricDefinition.dataType,
+        timestamp: mv.timestamp,
+      })),
+    }));
+  }
+
   async createMetricDefinition(
     createDto: CreateMetricDefinitionDto,
   ): Promise<MetricDefinitionDto> {
