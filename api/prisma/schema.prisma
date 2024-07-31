@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "../../docs/erd.svg"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+enum InfrastructureElementType {
+  Compute
+  Storage
+  Databases
+  Networking
+}
+
+enum CicdStepName {
+  integration
+  deployment
+}
+
+enum DeploymentSubStepName {
+  dev
+  preprod
+  prod
+}
+
+enum DataType {
+  integer
+  decimal
+  string
+}
+
+enum SdlcStepName {
+  integration_deployment
+  testing
+  development
+  design
+  planning
+  operations
+}
+
+enum IntegrationSubStepName {
+  sourcing
+  build
+  test
+  install
+}
+
+model Project {
+  id               Int               @id @default(autoincrement())
+  name             String
+  description      String
+  createdAt        DateTime          @default(now()) @map("created_at")
+  projectSdlcSteps ProjectSdlcStep[]
+  cicdPipelines    CicdPipeline[]
+  userFlows        UserFlow[]
+
+  @@map("projects")
+}
+
+model SdlcStep {
+  id               Int               @id @default(autoincrement())
+  name             SdlcStepName      @unique
+  projectSdlcSteps ProjectSdlcStep[]
+
+  @@map("sdlc_steps")
+}
+
+model ProjectSdlcStep {
+  id                               Int                               @id @default(autoincrement())
+  projectId                        Int                               @map("project_id")
+  sdlcStepId                       Int                               @map("sdlc_step_id")
+  project                          Project                           @relation(fields: [projectId], references: [id])
+  sdlcStep                         SdlcStep                          @relation(fields: [sdlcStepId], references: [id])
+  cicdPipelines                    CicdPipeline[]
+  operationsInfrastructureElements OperationsInfrastructureElement[]
+
+  @@unique([projectId, sdlcStepId])
+  @@index([sdlcStepId])
+  @@map("project_sdlc_steps")
+}
+
+model CloudProvider {
+  id                     Int                               @id @default(autoincrement())
+  name                   String                            @unique
+  infrastructureElements OperationsInfrastructureElement[]
+  InfrastructureService  InfrastructureService[]
+
+  @@map("cloud_providers")
+}
+
+model InfrastructureService {
+  id                     Int                               @id @default(autoincrement())
+  name                   String
+  cloudProviderId        Int
+  cloudProvider          CloudProvider                     @relation(fields: [cloudProviderId], references: [id])
+  type                   InfrastructureElementType
+  infrastructureElements OperationsInfrastructureElement[]
+  applicableMetrics      MetricApplicableService[]
+  AllowedMetric          AllowedMetric[]
+
+  @@map("infrastructure_services")
+}
+
+model MetricApplicableService {
+  metricDefinitionId Int
+  metricDefinition   OperationsMetricDefinition @relation(fields: [metricDefinitionId], references: [id])
+  serviceId          Int
+  service            InfrastructureService      @relation(fields: [serviceId], references: [id])
+
+  @@id([metricDefinitionId, serviceId])
+  @@map("metric_applicable_services")
+}
+
+model CicdPipeline {
+  id                Int               @id @default(autoincrement())
+  projectSdlcStepId Int               @map("project_sdlc_step_id")
+  repoName          String            @map("repo_name")
+  branch            String
+  cloudProvider     String            @map("cloud_provider")
+  pipelineName      String            @map("pipeline_name")
+  projectSdlcStep   ProjectSdlcStep   @relation(fields: [projectSdlcStepId], references: [id])
+  cicdPipelineRuns  CicdPipelineRun[]
+  project           Project?          @relation(fields: [projectId], references: [id])
+  projectId         Int?              @map("projects_id")
+
+  @@map("cicd_pipelines")
+}
+
+model CicdPipelineRun {
+  id                           Int                           @id @default(autoincrement())
+  cicdPipelineId               Int                           @map("cicd_pipeline_id")
+  runNumber                    Int                           @map("run_number")
+  startTime                    DateTime                      @map("start_time")
+  endTime                      DateTime                      @map("end_time")
+  cicdPipeline                 CicdPipeline                  @relation(fields: [cicdPipelineId], references: [id])
+  cicdPipelineStepMeasurements CicdPipelineStepMeasurement[]
+
+  @@map("cicd_pipeline_runs")
+}
+
+model CicdPipelineStepMeasurement {
+  id                     Int                     @id @default(autoincrement())
+  cicdPipelineRunId      Int                     @map("cicd_pipeline_run_id")
+  stepName               CicdStepName            @map("step_name")
+  integrationSubStepName IntegrationSubStepName? @map("integration_sub_step_name")
+  deploymentStage        DeploymentSubStepName?  @map("deployment_stage")
+  duration               Int
+  co2Consumption         Float                   @map("co2_consumption")
+  cicdPipelineRun        CicdPipelineRun         @relation(fields: [cicdPipelineRunId], references: [id])
+
+  @@map("cicd_pipeline_step_measurements")
+}
+
+model OperationsInfrastructureElement {
+  id                      Int                     @id @default(autoincrement())
+  projectSdlcStepId       Int                     @map("project_sdlc_step_id")
+  infrastructureServiceId Int
+  infrastructureService   InfrastructureService   @relation(fields: [infrastructureServiceId], references: [id])
+  tag                     String
+  projectSdlcStep         ProjectSdlcStep         @relation(fields: [projectSdlcStepId], references: [id])
+  metricValues            OperationsMetricValue[]
+  CloudProvider           CloudProvider?          @relation(fields: [cloudProviderId], references: [id])
+  cloudProviderId         Int?
+
+  @@index([projectSdlcStepId])
+  @@index([infrastructureServiceId])
+  @@map("operations_infrastructure_elements")
+}
+
+model OperationsMetricDefinition {
+  id                 Int                       @id @default(autoincrement())
+  metricName         String                    @map("metric_name")
+  dataType           DataType                  @map("data_type")
+  isKeyMetric        Boolean                   @default(false) @map("is_key_metric")
+  metricValues       OperationsMetricValue[]
+  allowedMetrics     AllowedMetric[]
+  applicableServices MetricApplicableService[]
+
+  @@map("operations_metric_definitions")
+}
+
+model OperationsMetricValue {
+  id                      Int                             @id @default(autoincrement())
+  infrastructureElementId Int                             @map("infrastructure_element_id")
+  metricDefinitionId      Int                             @map("metric_definition_id")
+  valueInt                Int?                            @map("value_int")
+  valueDecimal            Float?                          @map("value_decimal")
+  valueString             String?                         @map("value_string")
+  timestamp               DateTime
+  infrastructureElement   OperationsInfrastructureElement @relation(fields: [infrastructureElementId], references: [id])
+  metricDefinition        OperationsMetricDefinition      @relation(fields: [metricDefinitionId], references: [id])
+
+  @@index([metricDefinitionId])
+  @@map("operations_metric_values")
+}
+
+model AllowedMetric {
+  id                      Int                        @id @default(autoincrement())
+  infrastructureServiceId Int
+  infrastructureService   InfrastructureService      @relation(fields: [infrastructureServiceId], references: [id])
+  metricDefinitionId      Int                        @map("metric_definition_id")
+  metricDefinition        OperationsMetricDefinition @relation(fields: [metricDefinitionId], references: [id])
+
+  @@unique([infrastructureServiceId, metricDefinitionId])
+  @@index([metricDefinitionId])
+  @@map("allowed_metrics")
+}
+
+model UserFlow {
+  id             Int     @id @default(autoincrement())
+  projectId      Int     @map("project_id")
+  name           String
+  co2Consumption Float   @map("co2_consumption")
+  project        Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+  @@map("user_flows")
+}

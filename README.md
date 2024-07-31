@@ -10,6 +10,7 @@ Before you begin, ensure you have met the following requirements:
 - **Docker**: Make sure Docker is installed on your machine. You can download it from [Docker's official website](https://www.docker.com/get-started).
 - **Node.js and npm**: Ensure Node.js and npm are installed. You can download them from [Node.js official website](https://nodejs.org/).
 - **Git**: Ensure Git is installed for version control. You can download it from [Git's official website](https://git-scm.com/).
+- **Chromium**: Ensure Chromium is installed for running tests. You can download it from [Chromium's official website](https://www.chromium.org/).
 
 ## Getting Started
 

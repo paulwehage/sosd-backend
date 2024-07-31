@@ -1,28 +1,35 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Project } from '../entities/project.entity';
+import { Inject, Injectable } from '@nestjs/common';
+import { PrismaService } from './prisma.service';
+import { Project } from '@prisma/client';
+import { CreateProjectDto } from '../dtos/project.dto';
 
 @Injectable()
 export class ProjectService {
-  constructor(
-    @InjectRepository(Project)
-    private projectRepository: Repository<Project>,
-  ) {}
+  @Inject(PrismaService)
+  private prismaService: PrismaService;
 
-  findAll(): Promise<Project[]> {
-    return this.projectRepository.find();
+  async findAll(): Promise<Project[]> {
+    return this.prismaService.project.findMany();
   }
 
-  findOne(id: number): Promise<Project> {
-    return this.projectRepository.findOne({ where: { id } });
+  async findOne(id: number): Promise<Project> {
+    return this.prismaService.project.findUnique({ where: { id } });
   }
 
-  async create(project: Project): Promise<Project> {
-    return this.projectRepository.save(project);
+  async create(createProjectDto: CreateProjectDto): Promise<Project> {
+    return this.prismaService.project.create({ data: createProjectDto });
+  }
+  async update(
+    id: number,
+    updateProjectDto: CreateProjectDto,
+  ): Promise<Project> {
+    return this.prismaService.project.update({
+      where: { id },
+      data: updateProjectDto,
+    });
   }
 
   async remove(id: number): Promise<void> {
-    await this.projectRepository.delete(id);
+    await this.prismaService.project.delete({ where: { id } });
   }
 }

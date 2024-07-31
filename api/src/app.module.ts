@@ -1,24 +1,31 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Project } from './entities/project.entity';
 import { ProjectController } from './controllers/project.controller';
 import { ProjectService } from './services/project.service';
+import { PrismaService } from './services/prisma.service';
+import { UserFlowService } from './services/userFlow.service';
+import { UserFlowController } from './controllers/userFlow.controller';
+import { SdlcController } from './controllers/sdlc.controller';
+import { SdlcService } from './services/sdlc.service';
+import { OperationsController } from './controllers/operations.controller';
+import { OperationsService } from './services/operations.service';
+import { CicdController } from './controllers/cicd.controller';
+import { CicdService } from './services/cicd.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: 'localhost',
-      port: 3306,
-      username: 'user',
-      password: 'password',
-      database: 'sosd_db',
-      autoLoadEntities: true,
-      synchronize: true, // set to false in production
-    }),
-    TypeOrmModule.forFeature([Project]),
+  controllers: [
+    ProjectController,
+    UserFlowController,
+    SdlcController,
+    OperationsController,
+    CicdController,
   ],
-  controllers: [ProjectController],
-  providers: [ProjectService],
+  providers: [
+    ProjectService,
+    PrismaService,
+    UserFlowService,
+    SdlcService,
+    OperationsService,
+    CicdService,
+  ],
 })
 export class AppModule {}
