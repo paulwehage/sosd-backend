@@ -10,6 +10,8 @@ import { OperationsController } from './controllers/operations.controller';
 import { OperationsService } from './services/operations.service';
 import { CicdController } from './controllers/cicd.controller';
 import { CicdService } from './services/cicd.service';
+import { HistoricalDataService } from './services/historicalData.service';
+import { HistoricalDataController } from './controllers/historicalData.controller';
 
 @Module({
   controllers: [
@@ -18,6 +20,7 @@ import { CicdService } from './services/cicd.service';
     SdlcController,
     OperationsController,
     CicdController,
+    HistoricalDataController,
   ],
   providers: [
     ProjectService,
@@ -26,6 +29,7 @@ import { CicdService } from './services/cicd.service';
     SdlcService,
     OperationsService,
     CicdService,
+    HistoricalDataService,
   ],
 })
 export class AppModule {}

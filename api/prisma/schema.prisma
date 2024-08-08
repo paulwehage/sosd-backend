@@ -13,7 +13,7 @@ datasource db {
   relationMode = "prisma"
 }
 
-enum InfrastructureElementType {
+enum InfrastructureElementCategory {
   Compute
   Storage
   Databases
@@ -61,6 +61,7 @@ model Project {
   projectSdlcSteps ProjectSdlcStep[]
   cicdPipelines    CicdPipeline[]
   userFlows        UserFlow[]
+  lastUpdated      DateTime          @updatedAt
 
   @@map("projects")
 }
@@ -98,10 +99,10 @@ model CloudProvider {
 
 model InfrastructureService {
   id                     Int                               @id @default(autoincrement())
-  name                   String
-  cloudProviderId        Int
+  type                   String
+  category               InfrastructureElementCategory
+  cloudProviderId        Int                               @map("cloud_provider_id")
   cloudProvider          CloudProvider                     @relation(fields: [cloudProviderId], references: [id])
-  type                   InfrastructureElementType
   infrastructureElements OperationsInfrastructureElement[]
   applicableMetrics      MetricApplicableService[]
   AllowedMetric          AllowedMetric[]
@@ -110,9 +111,9 @@ model InfrastructureService {
 }
 
 model MetricApplicableService {
-  metricDefinitionId Int
+  metricDefinitionId Int                        @map("metric_definition_id")
   metricDefinition   OperationsMetricDefinition @relation(fields: [metricDefinitionId], references: [id])
-  serviceId          Int
+  serviceId          Int                        @map("service_id")
   service            InfrastructureService      @relation(fields: [serviceId], references: [id])
 
   @@id([metricDefinitionId, serviceId])
@@ -161,8 +162,9 @@ model CicdPipelineStepMeasurement {
 
 model OperationsInfrastructureElement {
   id                      Int                     @id @default(autoincrement())
+  name                    String // New field for the actual name of the service instance
   projectSdlcStepId       Int                     @map("project_sdlc_step_id")
-  infrastructureServiceId Int
+  infrastructureServiceId Int                     @map("infrastructure_service_id")
   infrastructureService   InfrastructureService   @relation(fields: [infrastructureServiceId], references: [id])
   tag                     String
   projectSdlcStep         ProjectSdlcStep         @relation(fields: [projectSdlcStepId], references: [id])
@@ -204,7 +206,7 @@ model OperationsMetricValue {
 
 model AllowedMetric {
   id                      Int                        @id @default(autoincrement())
-  infrastructureServiceId Int
+  infrastructureServiceId Int                        @map("infrastructure_service_id")
   infrastructureService   InfrastructureService      @relation(fields: [infrastructureServiceId], references: [id])
   metricDefinitionId      Int                        @map("metric_definition_id")
   metricDefinition        OperationsMetricDefinition @relation(fields: [metricDefinitionId], references: [id])
