@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsString, IsArray } from 'class-validator';
 
 export class CreateProjectDto {
   @IsString()
@@ -10,7 +10,9 @@ export class CreateProjectDto {
   @ApiProperty()
   description: string;
 
-  // Add other properties as needed
+  @IsArray()
+  @ApiProperty({ type: [String] })
+  tags: string[];
 }
 
 export class ProjectDto {
@@ -23,5 +25,6 @@ export class ProjectDto {
   @ApiProperty()
   description: string;
 
-  // Add other properties as needed
+  @ApiProperty({ type: [String] })
+  tags: string[];
 }

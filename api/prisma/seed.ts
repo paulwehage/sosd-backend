@@ -19,10 +19,10 @@ async function cleanDatabase() {
 
   // Get all table names, excluding views
   const tables = await prisma.$queryRaw<Array<{ TABLE_NAME: string }>>`
-    SELECT TABLE_NAME 
-    FROM INFORMATION_SCHEMA.TABLES 
-    WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_TYPE = 'BASE TABLE';
+      SELECT TABLE_NAME
+      FROM INFORMATION_SCHEMA.TABLES
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_TYPE = 'BASE TABLE';
   `;
 
   // Truncate all tables except the Prisma migrations table
@@ -104,6 +104,7 @@ async function main() {
       data: {
         name: projectData.name,
         description: projectData.description,
+        tags: JSON.stringify(projectData.tags),
       },
     });
 
@@ -132,8 +133,8 @@ async function main() {
         data: {
           name: element.name,
           infrastructureServiceId: service.id,
-          tag: element.tag,
           projectSdlcStepId: projectSdlcStep.id,
+          tags: JSON.stringify(element.tags),
         },
       });
 
@@ -204,6 +205,7 @@ async function main() {
           branch: pipelineData.branch,
           cloudProvider: pipelineData.cloudProvider,
           pipelineName: pipelineData.name,
+          tags: JSON.stringify(pipelineData.tags),
         },
       });
 

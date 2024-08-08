@@ -46,8 +46,8 @@ export class InfrastructureElementDto {
   @ApiProperty({ description: 'Name of the cloud provider' })
   cloudProvider: string;
 
-  @ApiProperty({ description: 'Tag of the infrastructure element' })
-  tag: string;
+  @ApiProperty({ description: 'Tags for the infrastructure element' })
+  tags: string[];
 
   @ApiProperty({
     description: 'Total CO2 consumption of the infrastructure element',
@@ -123,10 +123,10 @@ export class CreateInfrastructureElementDto {
   @IsNotEmpty()
   infrastructureServiceId: number;
 
-  @ApiProperty({ description: 'Tag of the infrastructure element' })
-  @IsString()
-  @IsNotEmpty()
-  tag: string;
+  @ApiProperty({ description: 'Tags for the infrastructure element' })
+  @IsArray()
+  @IsString({ each: true })
+  tags: string[];
 }
 
 export class CreateMetricDefinitionDto {

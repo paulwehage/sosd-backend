@@ -42,10 +42,15 @@ export class CicdService {
       data: {
         ...createDto,
         projectSdlcStepId: projectSdlcStep.id,
+        tags: JSON.stringify(createDto.tags),
       },
     });
 
-    return { ...pipeline, totalCo2: 0 };
+    return {
+      ...pipeline,
+      totalCo2: 0,
+      tags: JSON.parse(pipeline.tags as string),
+    };
   }
 
   async getPipelines(projectId: number): Promise<CicdPipelineDto[]> {
@@ -68,6 +73,7 @@ export class CicdService {
     return pipelines.map((pipeline) => ({
       ...pipeline,
       totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
+      tags: JSON.parse(pipeline.tags as string),
     }));
   }
 
@@ -101,6 +107,7 @@ export class CicdService {
     return {
       ...pipeline,
       totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
+      tags: JSON.parse(pipeline.tags as string),
     };
   }
 
@@ -109,8 +116,7 @@ export class CicdService {
     pipelineId: number,
     createDto: CreateCicdPipelineRunDto,
   ): Promise<CicdPipelineRunDto> {
-    const pipeline = await this.getPipeline(projectId, pipelineId);
-
+    await this.getPipeline(projectId, pipelineId);
     const pipelineRun = await this.prismaService.cicdPipelineRun.create({
       data: {
         ...createDto,
@@ -156,12 +162,12 @@ export class CicdService {
     const transformedDto = {
       ...createDto,
       integrationSubStepName:
-        //@ts-ignore
+        // @ts-ignore
         createDto.integrationSubStepName === ''
           ? null
           : createDto.integrationSubStepName,
       deploymentStage:
-        //@ts-ignore
+        // @ts-ignore
         createDto.deploymentStage === '' ? null : createDto.deploymentStage,
     };
 
@@ -257,20 +263,6 @@ export class CicdService {
     });
   }
 
-  private calculateTotalCo2ForPipeline(pipeline: any): number {
-    return pipeline.cicdPipelineRuns.reduce(
-      (total: number, run: any) => total + this.calculateTotalCo2ForRun(run),
-      0,
-    );
-  }
-
-  private calculateTotalCo2ForRun(run: any): number {
-    return run.cicdPipelineStepMeasurements.reduce(
-      (total: number, measurement: any) => total + measurement.co2Consumption,
-      0,
-    );
-  }
-
   async getStepMeasurements(
     projectId: number,
     pipelineId: number,
@@ -299,5 +291,59 @@ export class CicdService {
     }
 
     return pipelineRun.cicdPipelineStepMeasurements;
+  }
+
+  async getPipelinesByTag(
+    projectId: number,
+    tag: string,
+  ): Promise<CicdPipelineDto[]> {
+    const allPipelines = await this.prismaService.cicdPipeline.findMany({
+      where: {
+        projectSdlcStep: {
+          projectId,
+          sdlcStep: { name: 'integration_deployment' },
+        },
+      },
+      include: {
+        cicdPipelineRuns: {
+          include: {
+            cicdPipelineStepMeasurements: true,
+          },
+        },
+      },
+    });
+
+    const filteredPipelines = allPipelines.filter((pipeline) => {
+      const tags = this.safeJsonParse(pipeline.tags as string, []);
+      return Array.isArray(tags) && tags.includes(tag);
+    });
+
+    return filteredPipelines.map((pipeline) => ({
+      ...pipeline,
+      totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
+      tags: this.safeJsonParse(pipeline.tags as string, []),
+    }));
+  }
+
+  private safeJsonParse(jsonString: string, defaultValue: any = null) {
+    try {
+      return JSON.parse(jsonString);
+    } catch (error) {
+      return defaultValue;
+    }
+  }
+
+  private calculateTotalCo2ForPipeline(pipeline: any): number {
+    return pipeline.cicdPipelineRuns.reduce(
+      (total: number, run: any) => total + this.calculateTotalCo2ForRun(run),
+      0,
+    );
+  }
+
+  private calculateTotalCo2ForRun(run: any): number {
+    return run.cicdPipelineStepMeasurements.reduce(
+      (total: number, measurement: any) => total + measurement.co2Consumption,
+      0,
+    );
   }
 }

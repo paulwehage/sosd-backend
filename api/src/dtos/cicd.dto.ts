@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsDate,
   IsOptional,
+  IsArray,
 } from 'class-validator';
 import {
   CicdStepName,
@@ -31,6 +32,9 @@ export class CicdPipelineDto {
 
   @ApiProperty({ description: 'Total CO2 consumption of the pipeline' })
   totalCo2: number;
+
+  @ApiProperty({ description: 'Tags for the CI/CD pipeline' })
+  tags: string[];
 }
 
 export class CreateCicdPipelineDto {
@@ -53,6 +57,11 @@ export class CreateCicdPipelineDto {
   @IsString()
   @IsNotEmpty()
   pipelineName: string;
+
+  @ApiProperty({ description: 'Tags for the CI/CD pipeline' })
+  @IsArray()
+  @IsString({ each: true })
+  tags: string[];
 }
 
 export class CicdPipelineRunDto {

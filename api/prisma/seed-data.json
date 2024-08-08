@@ -3,12 +3,13 @@
     {
       "name": "E-Commerce Platform",
       "description": "A scalable e-commerce solution",
+      "tags": ["projectA"],
       "infrastructureElements": [
         {
           "name": "UserAuthLambda",
           "service": "Lambda",
           "cloudProvider": "AWS",
-          "tag": "production",
+          "tags": ["projectA", "projectB"],
           "metrics": [
             {
               "name": "Weekly Runs",
@@ -78,7 +79,7 @@
           "name": "ProductDatabase",
           "service": "DynamoDB",
           "cloudProvider": "AWS",
-          "tag": "production",
+          "tags": ["projectA", "projectB"],
           "metrics": [
             {
               "name": "Storage Size",
@@ -148,7 +149,7 @@
           "name": "StaticAssets",
           "service": "S3",
           "cloudProvider": "AWS",
-          "tag": "production",
+          "tags": ["projectA", "projectB"],
           "metrics": [
             {
               "name": "Storage Size",
@@ -211,7 +212,7 @@
           "name": "WebCluster",
           "service": "EKS",
           "cloudProvider": "AWS",
-          "tag": "production",
+          "tags": ["projectA"],
           "metrics": [
             {
               "name": "Weekly CPU-Time all Pods",
@@ -276,6 +277,7 @@
           "name": "Main Pipeline",
           "repoName": "e-commerce-main",
           "branch": "main",
+          "tags": ["projectA"],
           "cloudProvider": "AWS",
           "baseRunTime": 1800,
           "runTimeGrowth": 60,
@@ -299,12 +301,13 @@
     {
       "name": "Mobile App Backend",
       "description": "Backend services for a mobile application",
+      "tags": ["projectB"],
       "infrastructureElements": [
         {
           "name": "UserAPI",
           "service": "AppService",
           "cloudProvider": "Azure",
-          "tag": "production",
+          "tags": ["projectA", "projectB"],
           "metrics": [
             {
               "name": "Weekly Requests",
@@ -359,7 +362,7 @@
           "name": "UserDatabase",
           "service": "CosmosDB",
           "cloudProvider": "Azure",
-          "tag": "production",
+          "tags": ["projectA", "projectB"],
           "metrics": [
             {
               "name": "Storage Size",
@@ -417,6 +420,7 @@
           "repoName": "mobile-api",
           "branch": "main",
           "cloudProvider": "Azure",
+          "tags": ["projectB"],
           "baseRunTime": 1200,
           "runTimeGrowth": 30,
           "baseCO2": 60,

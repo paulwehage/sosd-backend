@@ -1,29 +1,29 @@
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
   Param,
   ParseIntPipe,
+  Post,
   Query,
 } from '@nestjs/common';
 import {
-  ApiTags,
   ApiOperation,
-  ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { OperationsService } from '../services/operations.service';
 import {
   AllowedMetricDto,
+  CreateInfrastructureElementDto,
+  CreateMetricDefinitionDto,
+  CreateMetricValueDto,
   InfrastructureElementDto,
   InfrastructureServiceDto,
   MetricDefinitionDto,
   MetricValueDto,
-  CreateInfrastructureElementDto,
-  CreateMetricDefinitionDto,
-  CreateMetricValueDto,
 } from '../dtos/operations.dto';
 
 @ApiTags('Operations')
@@ -78,7 +78,7 @@ export class OperationsController {
     @Param('projectId', ParseIntPipe) projectId: number,
     @Query('tag') tag: string,
   ): Promise<InfrastructureElementDto[]> {
-    return this.operationsService.getInfrastructureElementsByTag(
+    return await this.operationsService.getInfrastructureElementsByTag(
       projectId,
       tag,
     );

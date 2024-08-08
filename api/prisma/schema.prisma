@@ -57,6 +57,7 @@ model Project {
   id               Int               @id @default(autoincrement())
   name             String
   description      String
+  tags             Json              @default("[]") // Store tags as a JSON array
   createdAt        DateTime          @default(now()) @map("created_at")
   projectSdlcSteps ProjectSdlcStep[]
   cicdPipelines    CicdPipeline[]
@@ -127,6 +128,7 @@ model CicdPipeline {
   branch            String
   cloudProvider     String            @map("cloud_provider")
   pipelineName      String            @map("pipeline_name")
+  tags              Json              @default("[]")
   projectSdlcStep   ProjectSdlcStep   @relation(fields: [projectSdlcStepId], references: [id])
   cicdPipelineRuns  CicdPipelineRun[]
   project           Project?          @relation(fields: [projectId], references: [id])
@@ -166,7 +168,7 @@ model OperationsInfrastructureElement {
   projectSdlcStepId       Int                     @map("project_sdlc_step_id")
   infrastructureServiceId Int                     @map("infrastructure_service_id")
   infrastructureService   InfrastructureService   @relation(fields: [infrastructureServiceId], references: [id])
-  tag                     String
+  tags                    Json                    @default("[]") // Add tags field
   projectSdlcStep         ProjectSdlcStep         @relation(fields: [projectSdlcStepId], references: [id])
   metricValues            OperationsMetricValue[]
   CloudProvider           CloudProvider?          @relation(fields: [cloudProviderId], references: [id])

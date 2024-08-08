@@ -195,7 +195,7 @@ export class OperationsService {
           name: createDto.name,
           projectSdlcStepId: projectSdlcStep.id,
           infrastructureServiceId: createDto.infrastructureServiceId,
-          tag: createDto.tag,
+          tags: JSON.stringify(createDto.tags),
         },
         include: {
           infrastructureService: {
@@ -206,16 +206,7 @@ export class OperationsService {
         },
       });
 
-    return {
-      id: element.id,
-      name: element.name,
-      type: element.infrastructureService.type,
-      category: element.infrastructureService.category,
-      cloudProvider: element.infrastructureService.cloudProvider.name,
-      tag: element.tag,
-      totalCo2: 0,
-      metrics: [],
-    };
+    return this.mapToInfrastructureElementDto(element);
   }
 
   async getInfrastructureElement(
@@ -254,50 +245,6 @@ export class OperationsService {
     return this.mapToInfrastructureElementDto(element);
   }
 
-  async getInfrastructureElementsByTag(
-    projectId: number,
-    tag: string,
-  ): Promise<InfrastructureElementDto[]> {
-    const elements =
-      await this.prismaService.operationsInfrastructureElement.findMany({
-        where: {
-          projectSdlcStep: {
-            projectId,
-            sdlcStep: { name: 'operations' },
-          },
-          tag: tag,
-        },
-        include: {
-          infrastructureService: {
-            include: {
-              cloudProvider: true,
-            },
-          },
-          metricValues: {
-            include: {
-              metricDefinition: true,
-            },
-          },
-        },
-      });
-
-    return elements.map((element) => ({
-      id: element.id,
-      name: element.name,
-      type: element.infrastructureService.type,
-      category: element.infrastructureService.category,
-      cloudProvider: element.infrastructureService.cloudProvider.name,
-      tag: element.tag,
-      totalCo2: this.calculateTotalCo2(element.metricValues),
-      metrics: element.metricValues.map((mv) => ({
-        name: mv.metricDefinition.metricName,
-        value: this.getMetricValue(mv),
-        dataType: mv.metricDefinition.dataType,
-        timestamp: mv.timestamp,
-      })),
-    }));
-  }
-
   async createMetricDefinition(
     createDto: CreateMetricDefinitionDto,
   ): Promise<MetricDefinitionDto> {
@@ -327,6 +274,40 @@ export class OperationsService {
       });
 
     return this.mapToDto(metricDefinition);
+  }
+
+  async getInfrastructureElementsByTag(
+    projectId: number,
+    tag: string,
+  ): Promise<InfrastructureElementDto[]> {
+    const allElements =
+      await this.prismaService.operationsInfrastructureElement.findMany({
+        where: {
+          projectSdlcStep: {
+            projectId,
+            sdlcStep: { name: 'operations' },
+          },
+        },
+        include: {
+          infrastructureService: {
+            include: {
+              cloudProvider: true,
+            },
+          },
+          metricValues: {
+            include: {
+              metricDefinition: true,
+            },
+          },
+        },
+      });
+
+    const filteredElements = allElements.filter((element) => {
+      const tags = this.safeJsonParse(element.tags as string, []);
+      return Array.isArray(tags) && tags.includes(tag);
+    });
+
+    return filteredElements.map(this.mapToInfrastructureElementDto.bind(this));
   }
 
   private calculateTotalCo2(metricValues: any[]): number {
@@ -402,7 +383,7 @@ export class OperationsService {
       type: element.infrastructureService.type,
       category: element.infrastructureService.category,
       cloudProvider: element.infrastructureService.cloudProvider.name,
-      tag: element.tag,
+      tags: this.safeJsonParse(element.tags, []),
       totalCo2: this.calculateTotalCo2(element.metricValues),
       metrics: element.metricValues.map((mv) => ({
         name: mv.metricDefinition.metricName,
@@ -411,5 +392,14 @@ export class OperationsService {
         timestamp: mv.timestamp,
       })),
     };
+  }
+
+  private safeJsonParse(jsonString: string, defaultValue: any = null) {
+    try {
+      return JSON.parse(jsonString);
+    } catch (error) {
+      console.warn(`Failed to parse JSON: ${jsonString}. Using default value.`);
+      return defaultValue;
+    }
   }
 }

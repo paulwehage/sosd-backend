@@ -1,32 +1,53 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { Project } from '@prisma/client';
-import { CreateProjectDto } from '../dtos/project.dto';
+import { CreateProjectDto, ProjectDto } from '../dtos/project.dto';
 
 @Injectable()
 export class ProjectService {
-  @Inject(PrismaService)
-  private prismaService: PrismaService;
+  constructor(private prismaService: PrismaService) {}
 
-  async findAll(): Promise<Project[]> {
-    return this.prismaService.project.findMany();
+  private mapToDto(project: Project): ProjectDto {
+    return {
+      ...project,
+      tags: JSON.parse(project.tags as string),
+    };
   }
 
-  async findOne(id: number): Promise<Project> {
-    return this.prismaService.project.findUnique({ where: { id } });
+  async findAll(): Promise<ProjectDto[]> {
+    const projects = await this.prismaService.project.findMany();
+    return projects.map(this.mapToDto);
   }
 
-  async create(createProjectDto: CreateProjectDto): Promise<Project> {
-    return this.prismaService.project.create({ data: createProjectDto });
+  async findOne(id: number): Promise<ProjectDto> {
+    const project = await this.prismaService.project.findUnique({
+      where: { id },
+    });
+    return this.mapToDto(project);
   }
+
+  async create(createProjectDto: CreateProjectDto): Promise<ProjectDto> {
+    const project = await this.prismaService.project.create({
+      data: {
+        ...createProjectDto,
+        tags: JSON.stringify(createProjectDto.tags),
+      },
+    });
+    return this.mapToDto(project);
+  }
+
   async update(
     id: number,
     updateProjectDto: CreateProjectDto,
-  ): Promise<Project> {
-    return this.prismaService.project.update({
+  ): Promise<ProjectDto> {
+    const project = await this.prismaService.project.update({
       where: { id },
-      data: updateProjectDto,
+      data: {
+        ...updateProjectDto,
+        tags: JSON.stringify(updateProjectDto.tags),
+      },
     });
+    return this.mapToDto(project);
   }
 
   async remove(id: number): Promise<void> {

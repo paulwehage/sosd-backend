@@ -2,18 +2,12 @@ import {
   Controller,
   Get,
   Post,
-  Param,
-  Body,
-  Delete,
   Put,
+  Delete,
+  Body,
+  Param,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBody,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ProjectService } from '../services/project.service';
 import { CreateProjectDto, ProjectDto } from '../dtos/project.dto';
 
@@ -35,43 +29,35 @@ export class ProjectController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get project by ID' })
-  @ApiParam({ name: 'id', type: Number, description: 'The ID of the project' })
   @ApiResponse({
     status: 200,
     description: 'Return the project',
     type: ProjectDto,
   })
-  @ApiResponse({ status: 404, description: 'Project not found' })
-  findOne(@Param('id') id: number): Promise<ProjectDto> {
+  findOne(@Param('id') id: string): Promise<ProjectDto> {
     return this.projectService.findOne(+id);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create a new project' })
-  @ApiBody({ type: CreateProjectDto })
   @ApiResponse({
     status: 201,
     description: 'The project has been created',
     type: ProjectDto,
   })
-  async create(
-    @Body() createProjectDto: CreateProjectDto,
-  ): Promise<ProjectDto> {
+  create(@Body() createProjectDto: CreateProjectDto): Promise<ProjectDto> {
     return this.projectService.create(createProjectDto);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Update project by ID' })
-  @ApiParam({ name: 'id', type: Number, description: 'The ID of the project' })
-  @ApiBody({ type: CreateProjectDto })
   @ApiResponse({
     status: 200,
     description: 'The project has been updated',
     type: ProjectDto,
   })
-  @ApiResponse({ status: 404, description: 'Project not found' })
-  async update(
-    @Param('id') id: number,
+  update(
+    @Param('id') id: string,
     @Body() updateProjectDto: CreateProjectDto,
   ): Promise<ProjectDto> {
     return this.projectService.update(+id, updateProjectDto);
@@ -79,10 +65,8 @@ export class ProjectController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete project by ID' })
-  @ApiParam({ name: 'id', type: Number, description: 'The ID of the project' })
   @ApiResponse({ status: 200, description: 'The project has been deleted' })
-  @ApiResponse({ status: 404, description: 'Project not found' })
-  async remove(@Param('id') id: number): Promise<void> {
+  remove(@Param('id') id: string): Promise<void> {
     return this.projectService.remove(+id);
   }
 }

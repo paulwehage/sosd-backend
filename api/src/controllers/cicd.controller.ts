@@ -5,8 +5,15 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { CicdService } from '../services/cicd.service';
 import {
   CicdPipelineDto,
@@ -49,6 +56,24 @@ export class CicdController {
     @Param('projectId', ParseIntPipe) projectId: number,
   ): Promise<CicdPipelineDto[]> {
     return this.cicdService.getPipelines(projectId);
+  }
+
+  @Get('by-tag')
+  @ApiOperation({
+    summary: 'Get CI/CD pipelines for a project filtered by tag',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Return CI/CD pipelines filtered by tag.',
+    type: [CicdPipelineDto],
+  })
+  @ApiParam({ name: 'projectId', type: 'number' })
+  @ApiQuery({ name: 'tag', required: true, type: String })
+  async getPipelinesByTag(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Query('tag') tag: string,
+  ): Promise<CicdPipelineDto[]> {
+    return this.cicdService.getPipelinesByTag(projectId, tag);
   }
 
   @Get(':pipelineId')
