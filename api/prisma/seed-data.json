@@ -1,0 +1,479 @@
+{
+  "projects": [
+    {
+      "name": "E-Commerce Platform",
+      "description": "A scalable e-commerce solution",
+      "infrastructureElements": [
+        {
+          "name": "UserAuthLambda",
+          "service": "Lambda",
+          "cloudProvider": "AWS",
+          "tag": "production",
+          "metrics": [
+            {
+              "name": "Weekly Runs",
+              "type": "integer",
+              "isKey": true,
+              "baseValue": 10000,
+              "growth": 200
+            },
+            {
+              "name": "Weekly Duration",
+              "type": "integer",
+              "isKey": true,
+              "baseValue": 50000,
+              "growth": 1000
+            },
+            {
+              "name": "Weekly CO2 Consumption",
+              "type": "string",
+              "isKey": true,
+              "baseValue": 500,
+              "growth": 10,
+              "unit": "g CO2"
+            },
+            {
+              "name": "SCI per Call",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 0.05,
+              "growth": 0,
+              "unit": "g CO2"
+            },
+            {
+              "name": "Allocated Memory",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 128,
+              "growth": 0,
+              "unit": "MB"
+            },
+            {
+              "name": "Allocated Runtime Duration",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 3,
+              "growth": 0,
+              "unit": "sec"
+            },
+            {
+              "name": "Average Runtime Duration",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 0.8,
+              "growth": 0.01,
+              "unit": "sec"
+            },
+            {
+              "name": "Average CO2 Consumption per Run",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 0.05,
+              "growth": 0.001,
+              "unit": "g CO2"
+            }
+          ]
+        },
+        {
+          "name": "ProductDatabase",
+          "service": "DynamoDB",
+          "cloudProvider": "AWS",
+          "tag": "production",
+          "metrics": [
+            {
+              "name": "Storage Size",
+              "type": "string",
+              "isKey": true,
+              "baseValue": 100,
+              "growth": 2,
+              "unit": "GB"
+            },
+            {
+              "name": "Weekly Reads/Writes",
+              "type": "string",
+              "isKey": true,
+              "baseValue": {"reads": 1000000, "writes": 50000},
+              "growth": {"reads": 20000, "writes": 1000}
+            },
+            {
+              "name": "Weekly CO2 Consumption",
+              "type": "string",
+              "isKey": true,
+              "baseValue": 2000,
+              "growth": 40,
+              "unit": "g CO2"
+            },
+            {
+              "name": "SCI per Call",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 0.002,
+              "growth": 0,
+              "unit": "g CO2"
+            },
+            {
+              "name": "Instance Type",
+              "type": "string",
+              "isKey": false,
+              "baseValue": "r5.large",
+              "growth": 0
+            },
+            {
+              "name": "Average Item Size",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 2,
+              "growth": 0.1,
+              "unit": "KB"
+            },
+            {
+              "name": "Average CO2 Consumption per Read",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 0.001,
+              "growth": 0,
+              "unit": "g CO2"
+            },
+            {
+              "name": "Average CO2 Consumption per Write",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 0.005,
+              "growth": 0,
+              "unit": "g CO2"
+            }
+          ]
+        },
+        {
+          "name": "StaticAssets",
+          "service": "S3",
+          "cloudProvider": "AWS",
+          "tag": "production",
+          "metrics": [
+            {
+              "name": "Storage Size",
+              "type": "string",
+              "isKey": true,
+              "baseValue": 500,
+              "growth": 10,
+              "unit": "GB"
+            },
+            {
+              "name": "Requests",
+              "type": "integer",
+              "isKey": true,
+              "baseValue": 1000000,
+              "growth": 50000
+            },
+            {
+              "name": "Weekly CO2 Consumption",
+              "type": "string",
+              "isKey": true,
+              "baseValue": 1500,
+              "growth": 30,
+              "unit": "g CO2"
+            },
+            {
+              "name": "SCI per Week",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 1.5,
+              "growth": 0.03,
+              "unit": "g CO2"
+            },
+            {
+              "name": "Average Item Size",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 500,
+              "growth": 10,
+              "unit": "KB"
+            },
+            {
+              "name": "Average Request Consumption",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 0.001,
+              "growth": 0,
+              "unit": "g CO2"
+            },
+            {
+              "name": "Average Weekly Consumption",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 1500,
+              "growth": 30,
+              "unit": "g CO2"
+            }
+          ]
+        },
+        {
+          "name": "WebCluster",
+          "service": "EKS",
+          "cloudProvider": "AWS",
+          "tag": "production",
+          "metrics": [
+            {
+              "name": "Weekly CPU-Time all Pods",
+              "type": "string",
+              "isKey": true,
+              "baseValue": 10000,
+              "growth": 200,
+              "unit": "CPU-hours"
+            },
+            {
+              "name": "Weekly Network In/Out",
+              "type": "string",
+              "isKey": true,
+              "baseValue": {"in": 500, "out": 2000},
+              "growth": {"in": 10, "out": 40},
+              "unit": "GB"
+            },
+            {
+              "name": "Weekly CO2 Consumption",
+              "type": "string",
+              "isKey": true,
+              "baseValue": 5000,
+              "growth": 100,
+              "unit": "g CO2"
+            },
+            {
+              "name": "SCI per Week",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 5,
+              "growth": 0.1,
+              "unit": "g CO2"
+            },
+            {
+              "name": "Average Weekly used RAM all Pods",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 64,
+              "growth": 1,
+              "unit": "GB"
+            },
+            {
+              "name": "Average Weekly PVC",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 500,
+              "growth": 10,
+              "unit": "GB"
+            },
+            {
+              "name": "Average Weekly Pod Starts/Stops",
+              "type": "string",
+              "isKey": false,
+              "baseValue": {"starts": 100, "stops": 95},
+              "growth": {"starts": 2, "stops": 2}
+            }
+          ]
+        }
+      ],
+      "cicdPipelines": [
+        {
+          "name": "Main Pipeline",
+          "repoName": "e-commerce-main",
+          "branch": "main",
+          "cloudProvider": "AWS",
+          "baseRunTime": 1800,
+          "runTimeGrowth": 60,
+          "baseCO2": 80,
+          "co2Growth": 2
+        }
+      ],
+      "userFlows": [
+        {
+          "name": "Purchase Flow",
+          "baseCO2Consumption": 75.5,
+          "co2Growth": 0.5
+        },
+        {
+          "name": "Browse Catalog",
+          "baseCO2Consumption": 50.0,
+          "co2Growth": 0.3
+        }
+      ]
+    },
+    {
+      "name": "Mobile App Backend",
+      "description": "Backend services for a mobile application",
+      "infrastructureElements": [
+        {
+          "name": "UserAPI",
+          "service": "AppService",
+          "cloudProvider": "Azure",
+          "tag": "production",
+          "metrics": [
+            {
+              "name": "Weekly Requests",
+              "type": "integer",
+              "isKey": true,
+              "baseValue": 5000000,
+              "growth": 100000
+            },
+            {
+              "name": "Weekly CO2 Consumption",
+              "type": "string",
+              "isKey": true,
+              "baseValue": 3000,
+              "growth": 60,
+              "unit": "g CO2"
+            },
+            {
+              "name": "Average Response Time",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 200,
+              "growth": 1,
+              "unit": "ms"
+            },
+            {
+              "name": "SCI per Request",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 0.0006,
+              "growth": 0,
+              "unit": "g CO2"
+            },
+            {
+              "name": "Weekly CPU Time",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 1000,
+              "growth": 20,
+              "unit": "CPU-hours"
+            },
+            {
+              "name": "Memory Usage",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 16,
+              "growth": 0.5,
+              "unit": "GB"
+            }
+          ]
+        },
+        {
+          "name": "UserDatabase",
+          "service": "CosmosDB",
+          "cloudProvider": "Azure",
+          "tag": "production",
+          "metrics": [
+            {
+              "name": "Storage Size",
+              "type": "string",
+              "isKey": true,
+              "baseValue": 50,
+              "growth": 1,
+              "unit": "GB"
+            },
+            {
+              "name": "Weekly Requests",
+              "type": "integer",
+              "isKey": true,
+              "baseValue": 2000000,
+              "growth": 40000
+            },
+            {
+              "name": "Weekly CO2 Consumption",
+              "type": "string",
+              "isKey": true,
+              "baseValue": 1800,
+              "growth": 36,
+              "unit": "g CO2"
+            },
+            {
+              "name": "SCI per Request",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 0.0009,
+              "growth": 0,
+              "unit": "g CO2"
+            },
+            {
+              "name": "Average Item Size",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 5,
+              "growth": 0.1,
+              "unit": "KB"
+            },
+            {
+              "name": "Provisioned Throughput",
+              "type": "string",
+              "isKey": false,
+              "baseValue": 400,
+              "growth": 10,
+              "unit": "RU/s"
+            }
+          ]
+        }
+      ],
+      "cicdPipelines": [
+        {
+          "name": "API Pipeline",
+          "repoName": "mobile-api",
+          "branch": "main",
+          "cloudProvider": "Azure",
+          "baseRunTime": 1200,
+          "runTimeGrowth": 30,
+          "baseCO2": 60,
+          "co2Growth": 1.5
+        }
+      ],
+      "userFlows": [
+        {
+          "name": "User Registration",
+          "baseCO2Consumption": 30.0,
+          "co2Growth": 0.2
+        },
+        {
+          "name": "Data Sync",
+          "baseCO2Consumption": 45.0,
+          "co2Growth": 0.4
+        }
+      ]
+    }
+  ],
+  "cloudProviders": ["AWS", "Azure", "Google Cloud"],
+  "infrastructureServices": [
+    {
+      "type": "Lambda",
+      "category": "Compute",
+      "cloudProvider": "AWS",
+      "allowedMetrics": ["Weekly Runs", "Weekly Duration", "Weekly CO2 Consumption", "SCI per Call", "Allocated Memory", "Allocated Runtime Duration", "Average Runtime Duration", "Average CO2 Consumption per Run"]
+    },
+    {
+      "type": "DynamoDB",
+      "category": "Databases",
+      "cloudProvider": "AWS",
+      "allowedMetrics": ["Storage Size", "Weekly Reads/Writes", "Weekly CO2 Consumption", "SCI per Call", "Instance Type", "Average Item Size", "Average CO2 Consumption per Read", "Average CO2 Consumption per Write"]
+    },
+    {
+      "type": "S3",
+      "category": "Storage",
+      "cloudProvider": "AWS",
+      "allowedMetrics": ["Storage Size", "Requests", "Weekly CO2 Consumption", "SCI per Week", "Average Item Size", "Average Request Consumption", "Average Weekly Consumption"]
+    },
+    {
+      "type": "EKS",
+      "category": "Compute",
+      "cloudProvider": "AWS",
+      "allowedMetrics": ["Weekly CPU-Time all Pods", "Weekly Network In/Out", "Weekly CO2 Consumption", "SCI per Week", "Average Weekly used RAM all Pods", "Average Weekly PVC", "Average Weekly Pod Starts/Stops"]
+    },
+    {
+      "type": "AppService",
+      "category": "Compute",
+      "cloudProvider": "Azure",
+      "allowedMetrics": ["Weekly Requests", "Weekly CO2 Consumption", "Average Response Time", "SCI per Request", "Weekly CPU Time", "Memory Usage"]
+    },
+    {
+      "type": "CosmosDB",
+      "category": "Databases",
+      "cloudProvider": "Azure",
+      "allowedMetrics": ["Storage Size", "Weekly Requests", "Weekly CO2 Consumption", "SCI per Request", "Average Item Size", "Provisioned Throughput"]
+    }
+  ]
+}

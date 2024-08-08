@@ -2,21 +2,27 @@ import {
   PrismaClient,
   SdlcStepName,
   DataType,
-  InfrastructureElementType,
   CicdStepName,
   IntegrationSubStepName,
   DeploymentSubStepName,
 } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const prisma = new PrismaClient();
+
+const NUM_WEEKS = 12; // Generate data for 12 weeks
 
 async function cleanDatabase() {
   // Disable foreign key checks
   await prisma.$executeRaw`SET FOREIGN_KEY_CHECKS = 0;`;
 
-  // Get all table names
+  // Get all table names, excluding views
   const tables = await prisma.$queryRaw<Array<{ TABLE_NAME: string }>>`
-    SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE();
+    SELECT TABLE_NAME 
+    FROM INFORMATION_SCHEMA.TABLES 
+    WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_TYPE = 'BASE TABLE';
   `;
 
   // Truncate all tables except the Prisma migrations table
@@ -32,10 +38,34 @@ async function cleanDatabase() {
   console.log('Database cleaned');
 }
 
+function generateValue(baseValue, growth, week) {
+  if (typeof baseValue === 'object') {
+    return Object.entries(baseValue).reduce((acc, [key, value]) => {
+      // @ts-ignore
+      acc[key] = Math.round(value + growth[key] * week);
+      return acc;
+    }, {});
+  }
+  return baseValue + growth * week;
+}
+
 async function main() {
   await cleanDatabase();
   console.log('Database cleaned');
 
+  const seedDataPath = path.join(__dirname, 'seed-data.json');
+  let seedData: {
+    cloudProviders: any;
+    infrastructureServices: any;
+    projects: any;
+  };
+  try {
+    const rawData = fs.readFileSync(seedDataPath, 'utf-8');
+    seedData = JSON.parse(rawData);
+  } catch (error) {
+    console.error(`Error reading seed data file: ${error.message}`);
+    process.exit(1);
+  }
   // Seed SDLC Steps
   for (const stepName of Object.values(SdlcStepName)) {
     await prisma.sdlcStep.create({
@@ -44,34 +74,41 @@ async function main() {
   }
   console.log('SDLC steps seeded');
 
-  // Seed Projects
-  const exampleProject = await prisma.project.create({
-    data: {
-      name: 'Example Project',
-      description: 'This is an example project for testing purposes',
-    },
-  });
-  const additionalProject1 = await prisma.project.create({
-    data: {
-      name: 'Additional Project 1',
-      description: 'This is an additional project for testing purposes',
-    },
-  });
-  const additionalProject2 = await prisma.project.create({
-    data: {
-      name: 'Additional Project 2',
-      description: 'This is another additional project for testing purposes',
-    },
-  });
-  console.log('Projects seeded');
+  // Seed Cloud Providers
+  const cloudProviders = {};
+  for (const providerName of seedData.cloudProviders) {
+    const provider = await prisma.cloudProvider.create({
+      data: { name: providerName },
+    });
+    cloudProviders[providerName] = provider;
+  }
+  console.log('Cloud Providers seeded');
 
-  // Seed ProjectSdlcSteps
-  const sdlcSteps = await prisma.sdlcStep.findMany();
-  for (const project of [
-    exampleProject,
-    additionalProject1,
-    additionalProject2,
-  ]) {
+  // Seed Infrastructure Services
+  const infrastructureServices = {};
+  for (const service of seedData.infrastructureServices) {
+    const createdService = await prisma.infrastructureService.create({
+      data: {
+        type: service.type,
+        category: service.category,
+        cloudProviderId: cloudProviders[service.cloudProvider].id,
+      },
+    });
+    infrastructureServices[service.type] = createdService;
+  }
+  console.log('Infrastructure Services seeded');
+
+  // Seed Projects and related data
+  for (const projectData of seedData.projects) {
+    const project = await prisma.project.create({
+      data: {
+        name: projectData.name,
+        description: projectData.description,
+      },
+    });
+
+    // Create SDLC steps for the project
+    const sdlcSteps = await prisma.sdlcStep.findMany();
     for (const step of sdlcSteps) {
       await prisma.projectSdlcStep.create({
         data: {
@@ -80,267 +117,180 @@ async function main() {
         },
       });
     }
-  }
-  console.log('ProjectSdlcSteps seeded');
 
-  // Seed Cloud Providers
-  const aws = await prisma.cloudProvider.create({ data: { name: 'AWS' } });
-  const azure = await prisma.cloudProvider.create({ data: { name: 'Azure' } });
-  const googleCloud = await prisma.cloudProvider.create({
-    data: { name: 'Google Cloud' },
-  });
-  console.log('Cloud Providers seeded');
-
-  // Seed Infrastructure Services
-  const lambda = await prisma.infrastructureService.create({
-    data: {
-      name: 'Lambda',
-      cloudProviderId: aws.id,
-      type: InfrastructureElementType.Compute,
-    },
-  });
-  const azureFunctions = await prisma.infrastructureService.create({
-    data: {
-      name: 'Azure Functions',
-      cloudProviderId: azure.id,
-      type: InfrastructureElementType.Compute,
-    },
-  });
-  const googleFunctions = await prisma.infrastructureService.create({
-    data: {
-      name: 'Google Functions',
-      cloudProviderId: googleCloud.id,
-      type: InfrastructureElementType.Compute,
-    },
-  });
-  console.log('Infrastructure Services seeded');
-
-  // Seed Operations Infrastructure Elements
-  const operationsStep = await prisma.sdlcStep.findUnique({
-    where: { name: SdlcStepName.operations },
-  });
-  if (operationsStep) {
-    const projectSdlcStep = await prisma.projectSdlcStep.findFirst({
-      where: { projectId: exampleProject.id, sdlcStepId: operationsStep.id },
+    // Seed Infrastructure Elements
+    const operationsStep = await prisma.sdlcStep.findUnique({
+      where: { name: SdlcStepName.operations },
     });
-    if (projectSdlcStep) {
+    const projectSdlcStep = await prisma.projectSdlcStep.findFirst({
+      where: { projectId: project.id, sdlcStepId: operationsStep.id },
+    });
+
+    for (const element of projectData.infrastructureElements) {
+      const service = infrastructureServices[element.service];
       const infraElement = await prisma.operationsInfrastructureElement.create({
         data: {
-          infrastructureServiceId: lambda.id,
-          tag: 'production',
+          name: element.name,
+          infrastructureServiceId: service.id,
+          tag: element.tag,
           projectSdlcStepId: projectSdlcStep.id,
         },
       });
-      console.log(`Infrastructure element created with ID: ${infraElement.id}`);
 
-      // Seed Metric Definitions
-      const co2Metric = await prisma.operationsMetricDefinition.create({
-        data: {
-          metricName: 'co2_consumption',
-          dataType: DataType.decimal,
-          isKeyMetric: true,
-          applicableServices: {
-            create: [
-              { service: { connect: { id: lambda.id } } },
-              { service: { connect: { id: azureFunctions.id } } },
-            ],
-          },
-        },
-        include: { applicableServices: true },
-      });
-
-      const invocationsMetric = await prisma.operationsMetricDefinition.create({
-        data: {
-          metricName: 'invocations',
-          dataType: DataType.integer,
-          isKeyMetric: true,
-          applicableServices: {
-            create: [
-              { service: { connect: { id: lambda.id } } },
-              { service: { connect: { id: azureFunctions.id } } },
-            ],
-          },
-        },
-        include: { applicableServices: true },
-      });
-
-      const errorRateMetric = await prisma.operationsMetricDefinition.create({
-        data: {
-          metricName: 'error_rate',
-          dataType: DataType.decimal,
-          isKeyMetric: true,
-          applicableServices: {
-            create: [{ service: { connect: { id: googleFunctions.id } } }],
-          },
-        },
-        include: { applicableServices: true },
-      });
-
-      // Seed AllowedMetrics
-      await prisma.allowedMetric.createMany({
-        data: [
-          {
-            infrastructureServiceId: lambda.id,
-            metricDefinitionId: co2Metric.id,
-          },
-          {
-            infrastructureServiceId: lambda.id,
-            metricDefinitionId: invocationsMetric.id,
-          },
-          {
-            infrastructureServiceId: azureFunctions.id,
-            metricDefinitionId: co2Metric.id,
-          },
-          {
-            infrastructureServiceId: azureFunctions.id,
-            metricDefinitionId: invocationsMetric.id,
-          },
-          {
-            infrastructureServiceId: googleFunctions.id,
-            metricDefinitionId: errorRateMetric.id,
-          },
-        ],
-      });
-
-      console.log('Metric definitions and Allowed Metrics seeded');
-
-      console.log('Metric definitions seeded');
       // Seed Metric Values
-      await prisma.operationsMetricValue.createMany({
-        data: [
-          {
-            infrastructureElementId: infraElement.id,
-            metricDefinitionId: co2Metric.id,
-            valueDecimal: 100.5,
-            timestamp: new Date(),
-          },
-          {
-            infrastructureElementId: infraElement.id,
-            metricDefinitionId: invocationsMetric.id,
-            valueInt: 1000,
-            timestamp: new Date(),
-          },
-          {
-            infrastructureElementId: infraElement.id,
-            metricDefinitionId: errorRateMetric.id,
-            valueDecimal: 0.02,
-            timestamp: new Date(),
-          },
-        ],
-      });
-      console.log('Metric values seeded');
-    }
-  }
+      for (const metric of element.metrics) {
+        let metricDefinition =
+          await prisma.operationsMetricDefinition.findFirst({
+            where: { metricName: metric.name },
+          });
+        if (!metricDefinition) {
+          metricDefinition = await prisma.operationsMetricDefinition.create({
+            data: {
+              metricName: metric.name,
+              dataType:
+                metric.type === 'integer' ? DataType.integer : DataType.decimal,
+              isKeyMetric: metric.isKey,
+            },
+          });
+        }
 
-  // Seed CICD Pipeline
-  const integrationDeploymentStep = await prisma.sdlcStep.findUnique({
-    where: { name: SdlcStepName.integration_deployment },
-  });
-  if (integrationDeploymentStep) {
-    const projectSdlcStep = await prisma.projectSdlcStep.findFirst({
-      where: {
-        projectId: exampleProject.id,
-        sdlcStepId: integrationDeploymentStep.id,
-      },
+        // Create AllowedMetric
+        await prisma.allowedMetric.create({
+          data: {
+            infrastructureServiceId: service.id,
+            metricDefinitionId: metricDefinition.id,
+          },
+        });
+
+        for (let week = 0; week < NUM_WEEKS; week++) {
+          const date = new Date();
+          date.setDate(date.getDate() - (NUM_WEEKS - week) * 7);
+          const value = generateValue(metric.baseValue, metric.growth, week);
+
+          await prisma.operationsMetricValue.create({
+            data: {
+              infrastructureElementId: infraElement.id,
+              metricDefinitionId: metricDefinition.id,
+              valueInt: metric.type === 'integer' ? value : null,
+              valueDecimal: metric.type === 'decimal' ? value : null,
+              valueString:
+                metric.type === 'string'
+                  ? `${value}${metric.unit ? ' ' + metric.unit : ''}`
+                  : null,
+              timestamp: date,
+            },
+          });
+        }
+      }
+    }
+
+    // Seed CICD Pipelines
+    const integrationDeploymentStep = await prisma.sdlcStep.findUnique({
+      where: { name: SdlcStepName.integration_deployment },
     });
-    if (projectSdlcStep) {
+    const integrationDeploymentProjectSdlcStep =
+      await prisma.projectSdlcStep.findFirst({
+        where: {
+          projectId: project.id,
+          sdlcStepId: integrationDeploymentStep.id,
+        },
+      });
+
+    for (const pipelineData of projectData.cicdPipelines) {
       const pipeline = await prisma.cicdPipeline.create({
         data: {
-          projectSdlcStepId: projectSdlcStep.id,
-          repoName: 'example-repo',
-          branch: 'main',
-          cloudProvider: 'AWS',
-          pipelineName: 'Example Pipeline',
+          projectSdlcStepId: integrationDeploymentProjectSdlcStep.id,
+          repoName: pipelineData.repoName,
+          branch: pipelineData.branch,
+          cloudProvider: pipelineData.cloudProvider,
+          pipelineName: pipelineData.name,
         },
       });
-      console.log(`CICD Pipeline created with ID: ${pipeline.id}`);
 
-      const pipelineRun = await prisma.cicdPipelineRun.create({
-        data: {
-          cicdPipelineId: pipeline.id,
-          runNumber: 1,
-          startTime: new Date(),
-          endTime: new Date(Date.now() + 3600000), // 1 hour later
-        },
-      });
-      console.log(`CICD Pipeline Run created with ID: ${pipelineRun.id}`);
+      for (let week = 0; week < NUM_WEEKS; week++) {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - (NUM_WEEKS - week) * 7);
+        const endDate = new Date(
+          startDate.getTime() +
+            generateValue(
+              pipelineData.baseRunTime,
+              pipelineData.runTimeGrowth,
+              week,
+            ) *
+              1000,
+        );
 
-      await prisma.cicdPipelineStepMeasurement.createMany({
-        data: [
-          {
-            cicdPipelineRunId: pipelineRun.id,
-            stepName: CicdStepName.integration,
-            integrationSubStepName: IntegrationSubStepName.build,
-            duration: 1800,
-            co2Consumption: 50.5,
+        const pipelineRun = await prisma.cicdPipelineRun.create({
+          data: {
+            cicdPipelineId: pipeline.id,
+            runNumber: week + 1,
+            startTime: startDate,
+            endTime: endDate,
           },
-          {
-            cicdPipelineRunId: pipelineRun.id,
-            stepName: CicdStepName.deployment,
-            deploymentStage: DeploymentSubStepName.dev,
-            duration: 900,
-            co2Consumption: 25.3,
-          },
-        ],
-      });
-      console.log('CICD Pipeline Step Measurements seeded');
+        });
 
-      // Create another pipeline run to have more data
-      const anotherPipelineRun = await prisma.cicdPipelineRun.create({
-        data: {
-          cicdPipelineId: pipeline.id,
-          runNumber: 2,
-          startTime: new Date(Date.now() + 86400000), // 1 day later
-          endTime: new Date(Date.now() + 90000000), // 1 day and 1 hour later
-        },
-      });
-      console.log(
-        `Another CICD Pipeline Run created with ID: ${anotherPipelineRun.id}`,
-      );
+        await prisma.cicdPipelineStepMeasurement.createMany({
+          data: [
+            {
+              cicdPipelineRunId: pipelineRun.id,
+              stepName: CicdStepName.integration,
+              integrationSubStepName: IntegrationSubStepName.build,
+              duration: Math.round(
+                generateValue(
+                  pipelineData.baseRunTime,
+                  pipelineData.runTimeGrowth,
+                  week,
+                ) * 0.6,
+              ),
+              co2Consumption:
+                generateValue(
+                  pipelineData.baseCO2,
+                  pipelineData.co2Growth,
+                  week,
+                ) * 0.6,
+            },
+            {
+              cicdPipelineRunId: pipelineRun.id,
+              stepName: CicdStepName.deployment,
+              deploymentStage: DeploymentSubStepName.prod,
+              duration: Math.round(
+                generateValue(
+                  pipelineData.baseRunTime,
+                  pipelineData.runTimeGrowth,
+                  week,
+                ) * 0.4,
+              ),
+              co2Consumption:
+                generateValue(
+                  pipelineData.baseCO2,
+                  pipelineData.co2Growth,
+                  week,
+                ) * 0.4,
+            },
+          ],
+        });
+      }
+    }
 
-      await prisma.cicdPipelineStepMeasurement.createMany({
-        data: [
-          {
-            cicdPipelineRunId: anotherPipelineRun.id,
-            stepName: CicdStepName.integration,
-            integrationSubStepName: IntegrationSubStepName.build,
-            duration: 2000,
-            co2Consumption: 60.0,
+    // Seed User Flows
+    for (const flowData of projectData.userFlows) {
+      for (let week = 0; week < NUM_WEEKS; week++) {
+        await prisma.userFlow.create({
+          data: {
+            projectId: project.id,
+            name: flowData.name,
+            co2Consumption: generateValue(
+              flowData.baseCO2Consumption,
+              flowData.co2Growth,
+              week,
+            ),
           },
-          {
-            cicdPipelineRunId: anotherPipelineRun.id,
-            stepName: CicdStepName.deployment,
-            deploymentStage: DeploymentSubStepName.prod,
-            duration: 1200,
-            co2Consumption: 30.5,
-          },
-        ],
-      });
-      console.log('Additional CICD Pipeline Step Measurements seeded');
+        });
+      }
     }
   }
 
-  // Seed User Flows
-  await prisma.userFlow.createMany({
-    data: [
-      {
-        projectId: exampleProject.id,
-        name: 'Example User Flow',
-        co2Consumption: 75.5,
-      },
-      {
-        projectId: additionalProject1.id,
-        name: 'User Flow 1',
-        co2Consumption: 50.0,
-      },
-      {
-        projectId: additionalProject2.id,
-        name: 'User Flow 2',
-        co2Consumption: 60.0,
-      },
-    ],
-  });
-  console.log('User Flows seeded');
+  console.log('Seeding completed successfully');
 }
 
 main()
