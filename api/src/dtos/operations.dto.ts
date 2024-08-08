@@ -7,7 +7,7 @@ import {
   IsArray,
   IsBoolean,
 } from 'class-validator';
-import { InfrastructureElementType, DataType } from '@prisma/client';
+import { InfrastructureElementCategory, DataType } from '@prisma/client';
 
 export class MetricValueDto {
   @ApiProperty({ description: 'Name of the metric' })
@@ -29,14 +29,19 @@ export class InfrastructureElementDto {
   })
   id: number;
 
-  @ApiProperty({ description: 'Name of the infrastructure service' })
+  @ApiProperty({
+    description: 'Name of the specific infrastructure element instance',
+  })
   name: string;
 
+  @ApiProperty({ description: 'Type of the infrastructure service' })
+  type: string;
+
   @ApiProperty({
-    description: 'Type of the infrastructure element',
-    enum: InfrastructureElementType,
+    description: 'Category of the infrastructure element',
+    enum: InfrastructureElementCategory,
   })
-  type: InfrastructureElementType;
+  category: InfrastructureElementCategory;
 
   @ApiProperty({ description: 'Name of the cloud provider' })
   cloudProvider: string;
@@ -73,14 +78,16 @@ export class InfrastructureServiceDto {
   })
   id: number;
 
-  @ApiProperty({ description: 'Name of the infrastructure service' })
-  name: string;
+  @ApiProperty({
+    description: 'Category of the infrastructure service',
+    enum: InfrastructureElementCategory,
+  })
+  category: string;
 
   @ApiProperty({
     description: 'Type of the infrastructure element',
-    enum: InfrastructureElementType,
   })
-  type: InfrastructureElementType;
+  type: string;
 
   @ApiProperty({ description: 'Name of the cloud provider' })
   cloudProvider: string;
@@ -92,9 +99,9 @@ export class AllowedMetricDto {
 
   @ApiProperty({
     description: 'Type of the infrastructure element',
-    enum: InfrastructureElementType,
+    enum: InfrastructureElementCategory,
   })
-  serviceType: InfrastructureElementType;
+  serviceType: InfrastructureElementCategory;
 
   @ApiProperty({ description: 'Name of the metric' })
   metricName: string;
@@ -104,6 +111,13 @@ export class AllowedMetricDto {
 }
 
 export class CreateInfrastructureElementDto {
+  @ApiProperty({
+    description: 'Name of the specific infrastructure element instance',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
   @ApiProperty({ description: 'ID of the infrastructure service' })
   @IsNumber()
   @IsNotEmpty()
@@ -118,7 +132,7 @@ export class CreateInfrastructureElementDto {
 export class CreateMetricDefinitionDto {
   @ApiProperty({ description: 'Name of the metric' })
   @IsString()
-  metricName: string;
+  name: string;
 
   @ApiProperty({ description: 'Data type of the metric', enum: DataType })
   @IsEnum(DataType)
@@ -152,34 +166,4 @@ export class MetricDefinitionDto {
   @ApiProperty({ description: 'Whether this is a key metric' })
   isKeyMetric: boolean;
   applicableServices: InfrastructureServiceDto[];
-}
-
-export class UpdateMetricDefinitionDto {
-  @ApiProperty({ description: 'Name of the metric', required: false })
-  @IsString()
-  metricName?: string;
-
-  @ApiProperty({
-    description: 'Data type of the metric',
-    enum: DataType,
-    required: false,
-  })
-  @IsEnum(DataType)
-  dataType?: DataType;
-
-  @ApiProperty({
-    description: 'IDs of applicable infrastructure services',
-    type: [Number],
-    required: false,
-  })
-  @IsArray()
-  @IsNumber({}, { each: true })
-  applicableServiceIds?: number[];
-
-  @ApiProperty({
-    description: 'Whether this is a key metric to be displayed prominently',
-    required: false,
-  })
-  @IsBoolean()
-  isKeyMetric?: boolean;
 }

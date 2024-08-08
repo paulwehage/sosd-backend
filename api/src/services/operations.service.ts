@@ -13,7 +13,6 @@ import {
   InfrastructureServiceDto,
   MetricDefinitionDto,
   MetricValueDto,
-  UpdateMetricDefinitionDto,
 } from '../dtos/operations.dto';
 import { DataType } from '@prisma/client';
 import { PrismaService } from './prisma.service';
@@ -48,20 +47,7 @@ export class OperationsService {
         },
       });
 
-    return elements.map((element) => ({
-      id: element.id,
-      name: element.infrastructureService.name,
-      type: element.infrastructureService.type,
-      cloudProvider: element.infrastructureService.cloudProvider.name,
-      tag: element.tag,
-      totalCo2: this.calculateTotalCo2(element.metricValues),
-      metrics: element.metricValues.map((mv) => ({
-        name: mv.metricDefinition.metricName,
-        value: this.getMetricValue(mv),
-        dataType: mv.metricDefinition.dataType,
-        timestamp: mv.timestamp,
-      })),
-    }));
+    return elements.map(this.mapToInfrastructureElementDto.bind(this));
   }
 
   async getInfrastructureServices(): Promise<InfrastructureServiceDto[]> {
@@ -69,43 +55,42 @@ export class OperationsService {
       include: { cloudProvider: true },
     });
 
+    // @ts-ignore
     return services.map((service) => ({
       id: service.id,
-      name: service.name,
       type: service.type,
+      category: service.category,
       cloudProvider: service.cloudProvider.name,
     }));
   }
 
-  async getMetricDefinitions(): Promise<
-    {
-      dataType: 'integer' | 'decimal' | 'string';
-      name: string;
-      id: number;
-      isKeyMetric: boolean;
-      applicableServices: any;
-    }[]
-  > {
+  async getMetricDefinitions(): Promise<MetricDefinitionDto[]> {
     const definitions =
       await this.prismaService.operationsMetricDefinition.findMany({
         include: {
-          allowedMetrics: {
+          applicableServices: {
             include: {
-              infrastructureService: true,
+              service: {
+                include: {
+                  cloudProvider: true,
+                },
+              },
             },
           },
         },
       });
 
+    // @ts-ignore
     return definitions.map((def) => ({
       id: def.id,
       name: def.metricName,
       dataType: def.dataType,
       isKeyMetric: def.isKeyMetric,
-      applicableServices: def.allowedMetrics.map((am) => ({
-        id: am.infrastructureService.id,
-        name: am.infrastructureService.name,
-        type: am.infrastructureService.type,
+      applicableServices: def.applicableServices.map((as) => ({
+        id: as.service.id,
+        type: as.service.type,
+        category: as.service.category,
+        cloudProvider: as.service.cloudProvider.name,
       })),
     }));
   }
@@ -121,9 +106,10 @@ export class OperationsService {
       },
     });
 
+    // @ts-ignore
     return allowedMetrics.map((am) => ({
-      serviceName: am.infrastructureService.name,
       serviceType: am.infrastructureService.type,
+      serviceCategory: am.infrastructureService.category,
       metricName: am.metricDefinition.metricName,
       dataType: am.metricDefinition.dataType,
     }));
@@ -147,7 +133,7 @@ export class OperationsService {
 
     const allowedMetric = await this.prismaService.allowedMetric.findFirst({
       where: {
-        infrastructureServiceId: element.infrastructureService.id,
+        infrastructureServiceId: element.infrastructureServiceId,
         metricDefinitionId: createDto.metricDefinitionId,
       },
     });
@@ -189,32 +175,6 @@ export class OperationsService {
     };
   }
 
-  private calculateTotalCo2(metricValues: any[]): number {
-    return metricValues
-      .filter((mv) => mv.metricDefinition.metricName === 'co2_consumption')
-      .reduce((total, mv) => total + (mv.valueDecimal || 0), 0);
-  }
-
-  private getMetricValue(metricValue: any): number | string {
-    if (metricValue.valueInt !== null) return metricValue.valueInt;
-    if (metricValue.valueDecimal !== null) return metricValue.valueDecimal;
-    if (metricValue.valueString !== null) return metricValue.valueString;
-    throw new Error('No value found for metric');
-  }
-
-  private getValueFieldName(dataType: DataType): string {
-    switch (dataType) {
-      case DataType.integer:
-        return 'valueInt';
-      case DataType.decimal:
-        return 'valueDecimal';
-      case DataType.string:
-        return 'valueString';
-      default:
-        throw new BadRequestException(`Invalid data type: ${dataType}`);
-    }
-  }
-
   async createInfrastructureElement(
     projectId: number,
     createDto: CreateInfrastructureElementDto,
@@ -232,6 +192,7 @@ export class OperationsService {
     const element =
       await this.prismaService.operationsInfrastructureElement.create({
         data: {
+          name: createDto.name,
           projectSdlcStepId: projectSdlcStep.id,
           infrastructureServiceId: createDto.infrastructureServiceId,
           tag: createDto.tag,
@@ -247,8 +208,9 @@ export class OperationsService {
 
     return {
       id: element.id,
-      name: element.infrastructureService.name,
+      name: element.name,
       type: element.infrastructureService.type,
+      category: element.infrastructureService.category,
       cloudProvider: element.infrastructureService.cloudProvider.name,
       tag: element.tag,
       totalCo2: 0,
@@ -289,20 +251,7 @@ export class OperationsService {
       );
     }
 
-    return {
-      id: element.id,
-      name: element.infrastructureService.name,
-      type: element.infrastructureService.type,
-      cloudProvider: element.infrastructureService.cloudProvider.name,
-      tag: element.tag,
-      totalCo2: this.calculateTotalCo2(element.metricValues),
-      metrics: element.metricValues.map((mv) => ({
-        name: mv.metricDefinition.metricName,
-        value: this.getMetricValue(mv),
-        dataType: mv.metricDefinition.dataType,
-        timestamp: mv.timestamp,
-      })),
-    };
+    return this.mapToInfrastructureElementDto(element);
   }
 
   async getInfrastructureElementsByTag(
@@ -334,8 +283,9 @@ export class OperationsService {
 
     return elements.map((element) => ({
       id: element.id,
-      name: element.infrastructureService.name,
+      name: element.name,
       type: element.infrastructureService.type,
+      category: element.infrastructureService.category,
       cloudProvider: element.infrastructureService.cloudProvider.name,
       tag: element.tag,
       totalCo2: this.calculateTotalCo2(element.metricValues),
@@ -358,7 +308,7 @@ export class OperationsService {
     const metricDefinition =
       await this.prismaService.operationsMetricDefinition.create({
         data: {
-          metricName: createDto.metricName,
+          metricName: createDto.name,
           dataType: createDto.dataType,
           isKeyMetric: createDto.isKeyMetric,
           applicableServices: {
@@ -368,53 +318,41 @@ export class OperationsService {
           },
         },
         include: {
-          applicableServices: true,
+          applicableServices: {
+            include: {
+              service: true,
+            },
+          },
         },
       });
 
     return this.mapToDto(metricDefinition);
   }
 
-  async updateMetricDefinition(
-    id: number,
-    updateDto: UpdateMetricDefinitionDto,
-  ): Promise<MetricDefinitionDto> {
-    if (updateDto.isKeyMetric !== undefined) {
-      const currentMetric =
-        await this.prismaService.operationsMetricDefinition.findUnique({
-          where: { id },
-          include: { applicableServices: true },
-        });
-      if (updateDto.isKeyMetric && !currentMetric.isKeyMetric) {
-        await this.validateKeyMetricsCount(
-          updateDto.applicableServiceIds ||
-            currentMetric.applicableServices.map((as) => as.serviceId),
-        );
-      }
+  private calculateTotalCo2(metricValues: any[]): number {
+    return metricValues
+      .filter((mv) => mv.metricDefinition.metricName === 'co2_consumption')
+      .reduce((total, mv) => total + (mv.valueDecimal || 0), 0);
+  }
+
+  private getMetricValue(metricValue: any): number | string {
+    if (metricValue.valueInt !== null) return metricValue.valueInt;
+    if (metricValue.valueDecimal !== null) return metricValue.valueDecimal;
+    if (metricValue.valueString !== null) return metricValue.valueString;
+    throw new Error('No value found for metric');
+  }
+
+  private getValueFieldName(dataType: DataType): string {
+    switch (dataType) {
+      case DataType.integer:
+        return 'valueInt';
+      case DataType.decimal:
+        return 'valueDecimal';
+      case DataType.string:
+        return 'valueString';
+      default:
+        throw new BadRequestException(`Invalid data type: ${dataType}`);
     }
-
-    const metricDefinition =
-      await this.prismaService.operationsMetricDefinition.update({
-        where: { id },
-        data: {
-          metricName: updateDto.metricName,
-          dataType: updateDto.dataType,
-          isKeyMetric: updateDto.isKeyMetric,
-          applicableServices: updateDto.applicableServiceIds
-            ? {
-                deleteMany: {},
-                create: updateDto.applicableServiceIds.map((serviceId) => ({
-                  serviceId: serviceId,
-                })),
-              }
-            : undefined,
-        },
-        include: {
-          applicableServices: true,
-        },
-      });
-
-    return this.mapToDto(metricDefinition);
   }
 
   private async validateKeyMetricsCount(serviceIds: number[]): Promise<void> {
@@ -441,11 +379,37 @@ export class OperationsService {
 
   private mapToDto(metricDefinition: any): MetricDefinitionDto {
     return {
-      applicableServices: metricDefinition.applicableServices,
       id: metricDefinition.id,
       name: metricDefinition.metricName,
       dataType: metricDefinition.dataType,
       isKeyMetric: metricDefinition.isKeyMetric,
+      applicableServices: metricDefinition.applicableServices.map(
+        (as: { service: { id: any; type: any; category: any } }) => ({
+          id: as.service.id,
+          type: as.service.type,
+          category: as.service.category,
+        }),
+      ),
+    };
+  }
+
+  private mapToInfrastructureElementDto(
+    element: any,
+  ): InfrastructureElementDto {
+    return {
+      id: element.id,
+      name: element.name,
+      type: element.infrastructureService.type,
+      category: element.infrastructureService.category,
+      cloudProvider: element.infrastructureService.cloudProvider.name,
+      tag: element.tag,
+      totalCo2: this.calculateTotalCo2(element.metricValues),
+      metrics: element.metricValues.map((mv) => ({
+        name: mv.metricDefinition.metricName,
+        value: this.getMetricValue(mv),
+        dataType: mv.metricDefinition.dataType,
+        timestamp: mv.timestamp,
+      })),
     };
   }
 }
