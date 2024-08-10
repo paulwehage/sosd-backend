@@ -1,13 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString } from 'class-validator';
+import { IsNumber, IsString, IsDate } from 'class-validator';
 
 export class CreateUserFlowDto {
-  @ApiProperty({
-    description: 'The ID of the project this user flow belongs to',
-  })
-  @IsNumber()
-  projectId: number;
-
   @ApiProperty({ description: 'The name of the user flow' })
   @IsString()
   name: string;
@@ -31,4 +25,8 @@ export class UserFlowDto {
 
   @ApiProperty({ description: 'The CO2 consumption of the user flow' })
   co2Consumption: number;
+
+  @ApiProperty({ description: 'The creation date of the user flow' })
+  @IsDate()
+  createdAt: Date;
 }

@@ -8,9 +8,19 @@ export class UserFlowService {
   private prismaService: PrismaService;
 
   async findAll(projectId: number): Promise<UserFlowDto[]> {
-    return this.prismaService.userFlow.findMany({
+    const allUserFlows = await this.prismaService.userFlow.findMany({
       where: { projectId },
+      orderBy: { createdAt: 'desc' },
     });
+
+    const latestUserFlows = allUserFlows.reduce((acc, current) => {
+      if (!acc[current.name] || acc[current.name].createdAt < current.createdAt) {
+        acc[current.name] = current;
+      }
+      return acc;
+    }, {});
+
+    return Object.values(latestUserFlows);
   }
 
   async findOne(projectId: number, id: number): Promise<UserFlowDto> {
