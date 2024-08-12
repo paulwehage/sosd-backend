@@ -38,15 +38,15 @@ async function cleanDatabase() {
   console.log('Database cleaned');
 }
 
-function generateValue(baseValue, growth, week) {
+function generateValue(baseValue, growth, day) {
   if (typeof baseValue === 'object') {
     return Object.entries(baseValue).reduce((acc, [key, value]) => {
       // @ts-ignore
-      acc[key] = Math.round(value + growth[key] * week);
+      acc[key] = Math.round(value + (growth[key] * day) / 7);
       return acc;
     }, {});
   }
-  return baseValue + growth * week;
+  return baseValue + (growth * day) / 7;
 }
 
 async function main() {
@@ -66,6 +66,7 @@ async function main() {
     console.error(`Error reading seed data file: ${error.message}`);
     process.exit(1);
   }
+
   // Seed SDLC Steps
   for (const stepName of Object.values(SdlcStepName)) {
     await prisma.sdlcStep.create({
@@ -138,8 +139,31 @@ async function main() {
         },
       });
 
-      // Seed Metric Values
-      for (const metric of element.metrics) {
+      // Seed Consumption Data
+      const co2Metric = element.metrics.find(
+        (m) => m.name === 'Daily CO2 Consumption',
+      );
+      for (let day = 0; day < NUM_WEEKS * 7; day++) {
+        const date = new Date();
+        date.setDate(date.getDate() - (NUM_WEEKS * 7 - day));
+
+        await prisma.operationsInfrastructureElementConsumption.create({
+          data: {
+            infrastructureElementId: infraElement.id,
+            date,
+            co2Consumption: generateValue(
+              co2Metric.baseValue,
+              co2Metric.growth,
+              day,
+            ),
+          },
+        });
+      }
+
+      // Seed Metric Values (excluding CO2 consumption)
+      for (const metric of element.metrics.filter(
+        (m) => m.name !== 'Daily CO2 Consumption',
+      )) {
         let metricDefinition =
           await prisma.operationsMetricDefinition.findFirst({
             where: { metricName: metric.name },
@@ -163,16 +187,16 @@ async function main() {
           },
         });
 
-        for (let week = 0; week < NUM_WEEKS; week++) {
+        for (let day = 0; day < NUM_WEEKS * 7; day++) {
           const date = new Date();
-          date.setDate(date.getDate() - (NUM_WEEKS - week) * 7);
-          const value = generateValue(metric.baseValue, metric.growth, week);
+          date.setDate(date.getDate() - (NUM_WEEKS * 7 - day));
+          const value = generateValue(metric.baseValue, metric.growth, day);
 
           await prisma.operationsMetricValue.create({
             data: {
               infrastructureElementId: infraElement.id,
               metricDefinitionId: metricDefinition.id,
-              valueInt: metric.type === 'integer' ? value : null,
+              valueInt: metric.type === 'integer' ? Math.round(value) : null,
               valueDecimal: metric.type === 'decimal' ? value : null,
               valueString:
                 metric.type === 'string'
@@ -217,7 +241,7 @@ async function main() {
             generateValue(
               pipelineData.baseRunTime,
               pipelineData.runTimeGrowth,
-              week,
+              week * 7,
             ) *
               1000,
         );
@@ -241,14 +265,14 @@ async function main() {
                 generateValue(
                   pipelineData.baseRunTime,
                   pipelineData.runTimeGrowth,
-                  week,
+                  week * 7,
                 ) * 0.6,
               ),
               co2Consumption:
                 generateValue(
                   pipelineData.baseCO2,
                   pipelineData.co2Growth,
-                  week,
+                  week * 7,
                 ) * 0.6,
             },
             {
@@ -259,14 +283,14 @@ async function main() {
                 generateValue(
                   pipelineData.baseRunTime,
                   pipelineData.runTimeGrowth,
-                  week,
+                  week * 7,
                 ) * 0.4,
               ),
               co2Consumption:
                 generateValue(
                   pipelineData.baseCO2,
                   pipelineData.co2Growth,
-                  week,
+                  week * 7,
                 ) * 0.4,
             },
           ],
@@ -284,7 +308,7 @@ async function main() {
             co2Consumption: generateValue(
               flowData.baseCO2Consumption,
               flowData.co2Growth,
-              week,
+              week * 7,
             ),
           },
         });

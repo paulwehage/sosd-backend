@@ -9,13 +9,27 @@ import {
   CreateInfrastructureElementDto,
   CreateMetricDefinitionDto,
   CreateMetricValueDto,
+  DetailedInfrastructureElementDto,
   InfrastructureElementDto,
   InfrastructureServiceDto,
+  KeyMetricsDto,
   MetricDefinitionDto,
   MetricValueDto,
 } from '../dtos/operations.dto';
 import { DataType } from '@prisma/client';
 import { PrismaService } from './prisma.service';
+
+interface MetricValue {
+  metricDefinition: {
+    metricName: string;
+    dataType: DataType;
+    isKeyMetric: boolean;
+  };
+  valueInt: number | null;
+  valueDecimal: number | null;
+  valueString: string | null;
+  timestamp: Date;
+}
 
 @Injectable()
 export class OperationsService {
@@ -44,6 +58,10 @@ export class OperationsService {
               metricDefinition: true,
             },
           },
+          consumptions: {
+            orderBy: { date: 'desc' },
+            take: 1,
+          },
         },
       });
 
@@ -55,7 +73,6 @@ export class OperationsService {
       include: { cloudProvider: true },
     });
 
-    // @ts-ignore
     return services.map((service) => ({
       id: service.id,
       type: service.type,
@@ -80,19 +97,7 @@ export class OperationsService {
         },
       });
 
-    // @ts-ignore
-    return definitions.map((def) => ({
-      id: def.id,
-      name: def.metricName,
-      dataType: def.dataType,
-      isKeyMetric: def.isKeyMetric,
-      applicableServices: def.applicableServices.map((as) => ({
-        id: as.service.id,
-        type: as.service.type,
-        category: as.service.category,
-        cloudProvider: as.service.cloudProvider.name,
-      })),
-    }));
+    return definitions.map(this.mapToMetricDefinitionDto);
   }
 
   async getAllowedMetrics(
@@ -212,7 +217,7 @@ export class OperationsService {
   async getInfrastructureElement(
     projectId: number,
     elementId: number,
-  ): Promise<InfrastructureElementDto> {
+  ): Promise<DetailedInfrastructureElementDto> {
     const element =
       await this.prismaService.operationsInfrastructureElement.findFirst({
         where: {
@@ -233,6 +238,10 @@ export class OperationsService {
               metricDefinition: true,
             },
           },
+          consumptions: {
+            orderBy: { date: 'desc' },
+            take: 1,
+          },
         },
       });
 
@@ -242,7 +251,7 @@ export class OperationsService {
       );
     }
 
-    return this.mapToInfrastructureElementDto(element);
+    return this.mapToDetailedInfrastructureElementDto(element);
   }
 
   async createMetricDefinition(
@@ -273,7 +282,7 @@ export class OperationsService {
         },
       });
 
-    return this.mapToDto(metricDefinition);
+    return this.mapToMetricDefinitionDto(metricDefinition);
   }
 
   async getInfrastructureElementsByTag(
@@ -298,6 +307,10 @@ export class OperationsService {
             include: {
               metricDefinition: true,
             },
+          },
+          consumptions: {
+            orderBy: { date: 'desc' },
+            take: 1,
           },
         },
       });
@@ -358,17 +371,25 @@ export class OperationsService {
     }
   }
 
-  private mapToDto(metricDefinition: any): MetricDefinitionDto {
+  private mapToMetricDefinitionDto(metricDefinition: any): MetricDefinitionDto {
     return {
       id: metricDefinition.id,
       name: metricDefinition.metricName,
       dataType: metricDefinition.dataType,
       isKeyMetric: metricDefinition.isKeyMetric,
       applicableServices: metricDefinition.applicableServices.map(
-        (as: { service: { id: any; type: any; category: any } }) => ({
+        (as: {
+          service: {
+            id: any;
+            type: any;
+            category: any;
+            cloudProvider: { name: any };
+          };
+        }) => ({
           id: as.service.id,
           type: as.service.type,
           category: as.service.category,
+          cloudProvider: as.service.cloudProvider.name,
         }),
       ),
     };
@@ -377,6 +398,12 @@ export class OperationsService {
   private mapToInfrastructureElementDto(
     element: any,
   ): InfrastructureElementDto {
+    const latestConsumption = element.consumptions[0];
+    const keyMetrics = this.getKeyMetrics(
+      element.metricValues,
+      latestConsumption,
+    );
+
     return {
       id: element.id,
       name: element.name,
@@ -384,13 +411,79 @@ export class OperationsService {
       category: element.infrastructureService.category,
       cloudProvider: element.infrastructureService.cloudProvider.name,
       tags: this.safeJsonParse(element.tags, []),
-      totalCo2: this.calculateTotalCo2(element.metricValues),
-      metrics: element.metricValues.map((mv) => ({
+      totalCo2: latestConsumption ? latestConsumption.co2Consumption : 0,
+      keyMetrics,
+    };
+  }
+
+  private mapToDetailedInfrastructureElementDto(
+    element: any,
+  ): DetailedInfrastructureElementDto {
+    const baseDto = this.mapToInfrastructureElementDto(element);
+
+    const latestMetrics = element.metricValues.reduce(
+      (acc: Map<string, MetricValue>, mv: MetricValue) => {
+        const existingMetric = acc.get(mv.metricDefinition.metricName);
+        if (!existingMetric || mv.timestamp > existingMetric.timestamp) {
+          acc.set(mv.metricDefinition.metricName, mv);
+        }
+        return acc;
+      },
+      new Map<string, MetricValue>(),
+    );
+
+    const distinctMetrics = Array.from(latestMetrics.values()).map(
+      (mv: MetricValue) => ({
         name: mv.metricDefinition.metricName,
         value: this.getMetricValue(mv),
         dataType: mv.metricDefinition.dataType,
         timestamp: mv.timestamp,
-      })),
+      }),
+    );
+
+    return {
+      ...baseDto,
+      metrics: distinctMetrics,
+    };
+  }
+
+  private getKeyMetrics(
+    metricValues: MetricValue[],
+    latestConsumption: any,
+  ): KeyMetricsDto {
+    const latestMetrics = metricValues.reduce((acc, mv) => {
+      const existingMetric = acc.get(mv.metricDefinition.metricName);
+      if (!existingMetric || mv.timestamp > existingMetric.timestamp) {
+        acc.set(mv.metricDefinition.metricName, mv);
+      }
+      return acc;
+    }, new Map<string, MetricValue>());
+
+    const keyMetrics = Array.from(latestMetrics.values())
+      .filter((mv) => mv.metricDefinition.isKeyMetric)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, 2);
+
+    return {
+      dailyCo2Consumption: latestConsumption
+        ? latestConsumption.co2Consumption
+        : 0,
+      keyMetric1: keyMetrics[0]
+        ? {
+            name: keyMetrics[0].metricDefinition.metricName,
+            value: this.getMetricValue(keyMetrics[0]),
+            dataType: keyMetrics[0].metricDefinition.dataType,
+            timestamp: keyMetrics[0].timestamp,
+          }
+        : null,
+      keyMetric2: keyMetrics[1]
+        ? {
+            name: keyMetrics[1].metricDefinition.metricName,
+            value: this.getMetricValue(keyMetrics[1]),
+            dataType: keyMetrics[1].metricDefinition.dataType,
+            timestamp: keyMetrics[1].timestamp,
+          }
+        : null,
     };
   }
 

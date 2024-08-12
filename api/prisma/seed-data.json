@@ -12,30 +12,31 @@
           "tags": ["projectA", "projectB"],
           "metrics": [
             {
-              "name": "Weekly Runs",
+              "name": "Daily Runs",
               "type": "integer",
               "isKey": true,
-              "baseValue": 10000,
-              "growth": 200
+              "baseValue": 1429,
+              "growth": 29
             },
             {
-              "name": "Weekly Duration",
+              "name": "Daily Duration",
               "type": "integer",
               "isKey": true,
-              "baseValue": 50000,
-              "growth": 1000
+              "baseValue": 7143,
+              "growth": 143,
+              "unit": "ms"
             },
             {
-              "name": "Weekly CO2 Consumption",
-              "type": "string",
-              "isKey": true,
-              "baseValue": 500,
-              "growth": 10,
+              "name": "Daily CO2 Consumption",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 71.43,
+              "growth": 1.43,
               "unit": "g CO2"
             },
             {
               "name": "SCI per Call",
-              "type": "string",
+              "type": "decimal",
               "isKey": false,
               "baseValue": 0.05,
               "growth": 0,
@@ -43,7 +44,7 @@
             },
             {
               "name": "Allocated Memory",
-              "type": "string",
+              "type": "integer",
               "isKey": false,
               "baseValue": 128,
               "growth": 0,
@@ -51,27 +52,19 @@
             },
             {
               "name": "Allocated Runtime Duration",
-              "type": "string",
+              "type": "integer",
               "isKey": false,
-              "baseValue": 3,
+              "baseValue": 3000,
               "growth": 0,
-              "unit": "sec"
+              "unit": "ms"
             },
             {
               "name": "Average Runtime Duration",
-              "type": "string",
+              "type": "decimal",
               "isKey": false,
-              "baseValue": 0.8,
-              "growth": 0.01,
-              "unit": "sec"
-            },
-            {
-              "name": "Average CO2 Consumption per Run",
-              "type": "string",
-              "isKey": false,
-              "baseValue": 0.05,
-              "growth": 0.001,
-              "unit": "g CO2"
+              "baseValue": 800,
+              "growth": 10,
+              "unit": "ms"
             }
           ]
         },
@@ -82,66 +75,50 @@
           "tags": ["projectA", "projectB"],
           "metrics": [
             {
-              "name": "Storage Size",
-              "type": "string",
+              "name": "Daily Storage Size",
+              "type": "decimal",
               "isKey": true,
-              "baseValue": 100,
-              "growth": 2,
+              "baseValue": 14.29,
+              "growth": 0.29,
               "unit": "GB"
             },
             {
-              "name": "Weekly Reads/Writes",
-              "type": "string",
+              "name": "Daily Reads",
+              "type": "integer",
               "isKey": true,
-              "baseValue": {"reads": 1000000, "writes": 50000},
-              "growth": {"reads": 20000, "writes": 1000}
+              "baseValue": 142857,
+              "growth": 2857
             },
             {
-              "name": "Weekly CO2 Consumption",
-              "type": "string",
-              "isKey": true,
-              "baseValue": 2000,
-              "growth": 40,
+              "name": "Daily Writes",
+              "type": "integer",
+              "isKey": false,
+              "baseValue": 7143,
+              "growth": 143
+            },
+            {
+              "name": "Daily CO2 Consumption",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 285.71,
+              "growth": 5.71,
               "unit": "g CO2"
             },
             {
               "name": "SCI per Call",
-              "type": "string",
+              "type": "decimal",
               "isKey": false,
               "baseValue": 0.002,
               "growth": 0,
               "unit": "g CO2"
             },
             {
-              "name": "Instance Type",
-              "type": "string",
-              "isKey": false,
-              "baseValue": "r5.large",
-              "growth": 0
-            },
-            {
               "name": "Average Item Size",
-              "type": "string",
+              "type": "decimal",
               "isKey": false,
               "baseValue": 2,
               "growth": 0.1,
               "unit": "KB"
-            },
-            {
-              "name": "Average CO2 Consumption per Read",
-              "type": "string",
-              "isKey": false,
-              "baseValue": 0.001,
-              "growth": 0,
-              "unit": "g CO2"
-            },
-            {
-              "name": "Average CO2 Consumption per Write",
-              "type": "string",
-              "isKey": false,
-              "baseValue": 0.005,
-              "growth": 0,
-              "unit": "g CO2"
             }
           ]
         },
@@ -152,59 +129,43 @@
           "tags": ["projectA", "projectB"],
           "metrics": [
             {
-              "name": "Storage Size",
-              "type": "string",
+              "name": "Daily Storage Size",
+              "type": "decimal",
               "isKey": true,
-              "baseValue": 500,
-              "growth": 10,
+              "baseValue": 71.43,
+              "growth": 1.43,
               "unit": "GB"
             },
             {
-              "name": "Requests",
+              "name": "Daily Requests",
               "type": "integer",
               "isKey": true,
-              "baseValue": 1000000,
-              "growth": 50000
+              "baseValue": 142857,
+              "growth": 7143
             },
             {
-              "name": "Weekly CO2 Consumption",
-              "type": "string",
-              "isKey": true,
-              "baseValue": 1500,
-              "growth": 30,
+              "name": "Daily CO2 Consumption",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 214.29,
+              "growth": 4.29,
               "unit": "g CO2"
             },
             {
-              "name": "SCI per Week",
-              "type": "string",
+              "name": "SCI per Request",
+              "type": "decimal",
               "isKey": false,
-              "baseValue": 1.5,
-              "growth": 0.03,
-              "unit": "g CO2"
-            },
-            {
-              "name": "Average Item Size",
-              "type": "string",
-              "isKey": false,
-              "baseValue": 500,
-              "growth": 10,
-              "unit": "KB"
-            },
-            {
-              "name": "Average Request Consumption",
-              "type": "string",
-              "isKey": false,
-              "baseValue": 0.001,
+              "baseValue": 0.0015,
               "growth": 0,
               "unit": "g CO2"
             },
             {
-              "name": "Average Weekly Consumption",
-              "type": "string",
+              "name": "Average Item Size",
+              "type": "integer",
               "isKey": false,
-              "baseValue": 1500,
-              "growth": 30,
-              "unit": "g CO2"
+              "baseValue": 500,
+              "growth": 10,
+              "unit": "KB"
             }
           ]
         },
@@ -215,59 +176,52 @@
           "tags": ["projectA"],
           "metrics": [
             {
-              "name": "Weekly CPU-Time all Pods",
-              "type": "string",
+              "name": "Daily CPU-Time all Pods",
+              "type": "decimal",
               "isKey": true,
-              "baseValue": 10000,
-              "growth": 200,
+              "baseValue": 1428.57,
+              "growth": 28.57,
               "unit": "CPU-hours"
             },
             {
-              "name": "Weekly Network In/Out",
-              "type": "string",
+              "name": "Daily Network In",
+              "type": "decimal",
               "isKey": true,
-              "baseValue": {"in": 500, "out": 2000},
-              "growth": {"in": 10, "out": 40},
+              "baseValue": 71.43,
+              "growth": 1.43,
               "unit": "GB"
             },
             {
-              "name": "Weekly CO2 Consumption",
-              "type": "string",
-              "isKey": true,
-              "baseValue": 5000,
-              "growth": 100,
-              "unit": "g CO2"
-            },
-            {
-              "name": "SCI per Week",
-              "type": "string",
+              "name": "Daily Network Out",
+              "type": "decimal",
               "isKey": false,
-              "baseValue": 5,
-              "growth": 0.1,
+              "baseValue": 285.71,
+              "growth": 5.71,
+              "unit": "GB"
+            },
+            {
+              "name": "Daily CO2 Consumption",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 714.29,
+              "growth": 14.29,
               "unit": "g CO2"
             },
             {
-              "name": "Average Weekly used RAM all Pods",
-              "type": "string",
+              "name": "Daily RAM Usage",
+              "type": "decimal",
               "isKey": false,
               "baseValue": 64,
               "growth": 1,
               "unit": "GB"
             },
             {
-              "name": "Average Weekly PVC",
-              "type": "string",
+              "name": "Daily PVC",
+              "type": "decimal",
               "isKey": false,
-              "baseValue": 500,
-              "growth": 10,
+              "baseValue": 71.43,
+              "growth": 1.43,
               "unit": "GB"
-            },
-            {
-              "name": "Average Weekly Pod Starts/Stops",
-              "type": "string",
-              "isKey": false,
-              "baseValue": {"starts": 100, "stops": 95},
-              "growth": {"starts": 2, "stops": 2}
             }
           ]
         }
@@ -310,23 +264,31 @@
           "tags": ["projectA", "projectB"],
           "metrics": [
             {
-              "name": "Weekly Requests",
+              "name": "Daily Requests",
               "type": "integer",
               "isKey": true,
-              "baseValue": 5000000,
-              "growth": 100000
+              "baseValue": 714286,
+              "growth": 14286
             },
             {
-              "name": "Weekly CO2 Consumption",
-              "type": "string",
+              "name": "Daily CPU Time",
+              "type": "decimal",
               "isKey": true,
-              "baseValue": 3000,
-              "growth": 60,
+              "baseValue": 142.86,
+              "growth": 2.86,
+              "unit": "CPU-hours"
+            },
+            {
+              "name": "Daily CO2 Consumption",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 428.57,
+              "growth": 8.57,
               "unit": "g CO2"
             },
             {
               "name": "Average Response Time",
-              "type": "string",
+              "type": "integer",
               "isKey": false,
               "baseValue": 200,
               "growth": 1,
@@ -334,23 +296,15 @@
             },
             {
               "name": "SCI per Request",
-              "type": "string",
+              "type": "decimal",
               "isKey": false,
               "baseValue": 0.0006,
               "growth": 0,
               "unit": "g CO2"
             },
             {
-              "name": "Weekly CPU Time",
-              "type": "string",
-              "isKey": false,
-              "baseValue": 1000,
-              "growth": 20,
-              "unit": "CPU-hours"
-            },
-            {
               "name": "Memory Usage",
-              "type": "string",
+              "type": "decimal",
               "isKey": false,
               "baseValue": 16,
               "growth": 0.5,
@@ -365,31 +319,31 @@
           "tags": ["projectA", "projectB"],
           "metrics": [
             {
-              "name": "Storage Size",
-              "type": "string",
+              "name": "Daily Storage Size",
+              "type": "decimal",
               "isKey": true,
-              "baseValue": 50,
-              "growth": 1,
+              "baseValue": 7.14,
+              "growth": 0.14,
               "unit": "GB"
             },
             {
-              "name": "Weekly Requests",
+              "name": "Daily Requests",
               "type": "integer",
               "isKey": true,
-              "baseValue": 2000000,
-              "growth": 40000
+              "baseValue": 285714,
+              "growth": 5714
             },
             {
-              "name": "Weekly CO2 Consumption",
-              "type": "string",
-              "isKey": true,
-              "baseValue": 1800,
-              "growth": 36,
+              "name": "Daily CO2 Consumption",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 257.14,
+              "growth": 5.14,
               "unit": "g CO2"
             },
             {
               "name": "SCI per Request",
-              "type": "string",
+              "type": "decimal",
               "isKey": false,
               "baseValue": 0.0009,
               "growth": 0,
@@ -397,7 +351,7 @@
             },
             {
               "name": "Average Item Size",
-              "type": "string",
+              "type": "decimal",
               "isKey": false,
               "baseValue": 5,
               "growth": 0.1,
@@ -405,7 +359,7 @@
             },
             {
               "name": "Provisioned Throughput",
-              "type": "string",
+              "type": "integer",
               "isKey": false,
               "baseValue": 400,
               "growth": 10,
@@ -447,37 +401,37 @@
       "type": "Lambda",
       "category": "Compute",
       "cloudProvider": "AWS",
-      "allowedMetrics": ["Weekly Runs", "Weekly Duration", "Weekly CO2 Consumption", "SCI per Call", "Allocated Memory", "Allocated Runtime Duration", "Average Runtime Duration", "Average CO2 Consumption per Run"]
+      "allowedMetrics": ["Daily Runs", "Daily Duration", "Daily CO2 Consumption", "SCI per Call", "Allocated Memory", "Allocated Runtime Duration", "Average Runtime Duration"]
     },
     {
       "type": "DynamoDB",
       "category": "Databases",
       "cloudProvider": "AWS",
-      "allowedMetrics": ["Storage Size", "Weekly Reads/Writes", "Weekly CO2 Consumption", "SCI per Call", "Instance Type", "Average Item Size", "Average CO2 Consumption per Read", "Average CO2 Consumption per Write"]
+      "allowedMetrics": ["Daily Storage Size", "Daily Reads", "Daily Writes", "Daily CO2 Consumption", "SCI per Call", "Average Item Size"]
     },
     {
       "type": "S3",
       "category": "Storage",
       "cloudProvider": "AWS",
-      "allowedMetrics": ["Storage Size", "Requests", "Weekly CO2 Consumption", "SCI per Week", "Average Item Size", "Average Request Consumption", "Average Weekly Consumption"]
+      "allowedMetrics": ["Daily Storage Size", "Daily Requests", "Daily CO2 Consumption", "SCI per Request", "Average Item Size"]
     },
     {
       "type": "EKS",
       "category": "Compute",
       "cloudProvider": "AWS",
-      "allowedMetrics": ["Weekly CPU-Time all Pods", "Weekly Network In/Out", "Weekly CO2 Consumption", "SCI per Week", "Average Weekly used RAM all Pods", "Average Weekly PVC", "Average Weekly Pod Starts/Stops"]
+      "allowedMetrics": ["Daily CPU-Time all Pods", "Daily Network In", "Daily Network Out", "Daily CO2 Consumption", "Daily RAM Usage", "Daily PVC"]
     },
     {
       "type": "AppService",
       "category": "Compute",
       "cloudProvider": "Azure",
-      "allowedMetrics": ["Weekly Requests", "Weekly CO2 Consumption", "Average Response Time", "SCI per Request", "Weekly CPU Time", "Memory Usage"]
+      "allowedMetrics": ["Daily Requests", "Daily CPU Time", "Daily CO2 Consumption", "Average Response Time", "SCI per Request", "Memory Usage"]
     },
     {
       "type": "CosmosDB",
       "category": "Databases",
       "cloudProvider": "Azure",
-      "allowedMetrics": ["Storage Size", "Weekly Requests", "Weekly CO2 Consumption", "SCI per Request", "Average Item Size", "Provisioned Throughput"]
+      "allowedMetrics": ["Daily Storage Size", "Daily Requests", "Daily CO2 Consumption", "SCI per Request", "Average Item Size", "Provisioned Throughput"]
     }
   ]
 }

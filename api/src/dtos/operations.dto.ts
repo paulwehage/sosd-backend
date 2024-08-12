@@ -23,6 +23,17 @@ export class MetricValueDto {
   timestamp: Date;
 }
 
+export class KeyMetricsDto {
+  @ApiProperty({ description: 'Daily CO2 Consumption in grams' })
+  dailyCo2Consumption: number;
+
+  @ApiProperty({ description: 'First key metric (varies by service)' })
+  keyMetric1: MetricValueDto;
+
+  @ApiProperty({ description: 'Second key metric (varies by service)' })
+  keyMetric2: MetricValueDto;
+}
+
 export class InfrastructureElementDto {
   @ApiProperty({
     description: 'Unique identifier of the infrastructure element',
@@ -55,7 +66,15 @@ export class InfrastructureElementDto {
   totalCo2: number;
 
   @ApiProperty({
-    description: 'Metrics associated with the infrastructure element',
+    description: 'Key metrics of the infrastructure element',
+    type: KeyMetricsDto,
+  })
+  keyMetrics: KeyMetricsDto;
+}
+
+export class DetailedInfrastructureElementDto extends InfrastructureElementDto {
+  @ApiProperty({
+    description: 'All metrics associated with the infrastructure element',
     type: [MetricValueDto],
   })
   metrics: MetricValueDto[];
@@ -84,9 +103,7 @@ export class InfrastructureServiceDto {
   })
   category: string;
 
-  @ApiProperty({
-    description: 'Type of the infrastructure element',
-  })
+  @ApiProperty({ description: 'Type of the infrastructure element' })
   type: string;
 
   @ApiProperty({ description: 'Name of the cloud provider' })
@@ -165,5 +182,10 @@ export class MetricDefinitionDto {
 
   @ApiProperty({ description: 'Whether this is a key metric' })
   isKeyMetric: boolean;
+
+  @ApiProperty({
+    description: 'Applicable services for this metric',
+    type: [InfrastructureServiceDto],
+  })
   applicableServices: InfrastructureServiceDto[];
 }

@@ -14,7 +14,10 @@ export class UserFlowService {
     });
 
     const latestUserFlows = allUserFlows.reduce((acc, current) => {
-      if (!acc[current.name] || acc[current.name].createdAt < current.createdAt) {
+      if (
+        !acc[current.name] ||
+        acc[current.name].createdAt < current.createdAt
+      ) {
         acc[current.name] = current;
       }
       return acc;

@@ -163,20 +163,35 @@ model CicdPipelineStepMeasurement {
 }
 
 model OperationsInfrastructureElement {
-  id                      Int                     @id @default(autoincrement())
-  name                    String // New field for the actual name of the service instance
-  projectSdlcStepId       Int                     @map("project_sdlc_step_id")
-  infrastructureServiceId Int                     @map("infrastructure_service_id")
-  infrastructureService   InfrastructureService   @relation(fields: [infrastructureServiceId], references: [id])
-  tags                    Json                    @default("[]") // Add tags field
-  projectSdlcStep         ProjectSdlcStep         @relation(fields: [projectSdlcStepId], references: [id])
+  id                      Int                                           @id @default(autoincrement())
+  name                    String
+  projectSdlcStepId       Int                                           @map("project_sdlc_step_id")
+  infrastructureServiceId Int                                           @map("infrastructure_service_id")
+  infrastructureService   InfrastructureService                         @relation(fields: [infrastructureServiceId], references: [id])
+  tags                    Json                                          @default("[]")
+  projectSdlcStep         ProjectSdlcStep                               @relation(fields: [projectSdlcStepId], references: [id])
   metricValues            OperationsMetricValue[]
-  CloudProvider           CloudProvider?          @relation(fields: [cloudProviderId], references: [id])
+  consumptions            OperationsInfrastructureElementConsumption[]
+  CloudProvider           CloudProvider?                                @relation(fields: [cloudProviderId], references: [id])
   cloudProviderId         Int?
 
   @@index([projectSdlcStepId])
   @@index([infrastructureServiceId])
   @@map("operations_infrastructure_elements")
+}
+
+model OperationsInfrastructureElementConsumption {
+  id                      Int                             @id @default(autoincrement())
+  infrastructureElementId Int                             @map("infrastructure_element_id")
+  date                    DateTime
+  dailyRuns               Int?                            @map("daily_runs")
+  dailyDuration           Int?                            @map("daily_duration")
+  co2Consumption          Float                           @map("co2_consumption")
+  infrastructureElement   OperationsInfrastructureElement @relation(fields: [infrastructureElementId], references: [id])
+
+  @@unique([infrastructureElementId, date])
+  @@index([infrastructureElementId])
+  @@map("operations_infrastructure_elements_consumption")
 }
 
 model OperationsMetricDefinition {
