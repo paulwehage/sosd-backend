@@ -1,6 +1,5 @@
 import {
   PrismaClient,
-  SdlcStepName,
   DataType,
   CicdStepName,
   IntegrationSubStepName,
@@ -67,14 +66,6 @@ async function main() {
     process.exit(1);
   }
 
-  // Seed SDLC Steps
-  for (const stepName of Object.values(SdlcStepName)) {
-    await prisma.sdlcStep.create({
-      data: { name: stepName },
-    });
-  }
-  console.log('SDLC steps seeded');
-
   // Seed Cloud Providers
   const cloudProviders = {};
   for (const providerName of seedData.cloudProviders) {
@@ -109,33 +100,14 @@ async function main() {
       },
     });
 
-    // Create SDLC steps for the project
-    const sdlcSteps = await prisma.sdlcStep.findMany();
-    for (const step of sdlcSteps) {
-      await prisma.projectSdlcStep.create({
-        data: {
-          projectId: project.id,
-          sdlcStepId: step.id,
-        },
-      });
-    }
-
     // Seed Infrastructure Elements
-    const operationsStep = await prisma.sdlcStep.findUnique({
-      where: { name: SdlcStepName.operations },
-    });
-    const projectSdlcStep = await prisma.projectSdlcStep.findFirst({
-      where: { projectId: project.id, sdlcStepId: operationsStep.id },
-    });
-
     for (const element of projectData.infrastructureElements) {
       const service = infrastructureServices[element.service];
       const infraElement = await prisma.operationsInfrastructureElement.create({
         data: {
           name: element.name,
           infrastructureServiceId: service.id,
-          projectSdlcStepId: projectSdlcStep.id,
-          tags: JSON.stringify(element.tags),
+          tags: JSON.stringify([...element.tags, project.name]),
         },
       });
 
@@ -210,26 +182,14 @@ async function main() {
     }
 
     // Seed CICD Pipelines
-    const integrationDeploymentStep = await prisma.sdlcStep.findUnique({
-      where: { name: SdlcStepName.integration_deployment },
-    });
-    const integrationDeploymentProjectSdlcStep =
-      await prisma.projectSdlcStep.findFirst({
-        where: {
-          projectId: project.id,
-          sdlcStepId: integrationDeploymentStep.id,
-        },
-      });
-
     for (const pipelineData of projectData.cicdPipelines) {
       const pipeline = await prisma.cicdPipeline.create({
         data: {
-          projectSdlcStepId: integrationDeploymentProjectSdlcStep.id,
           repoName: pipelineData.repoName,
           branch: pipelineData.branch,
           cloudProvider: pipelineData.cloudProvider,
           pipelineName: pipelineData.name,
-          tags: JSON.stringify(pipelineData.tags),
+          tags: JSON.stringify([...pipelineData.tags, project.name]),
         },
       });
 

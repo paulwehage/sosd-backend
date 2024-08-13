@@ -36,17 +36,9 @@ export class OperationsService {
   @Inject(PrismaService)
   private prismaService: PrismaService;
 
-  async getInfrastructureElements(
-    projectId: number,
-  ): Promise<InfrastructureElementDto[]> {
+  async getInfrastructureElements(): Promise<InfrastructureElementDto[]> {
     const elements =
       await this.prismaService.operationsInfrastructureElement.findMany({
-        where: {
-          projectSdlcStep: {
-            projectId,
-            sdlcStep: { name: 'operations' },
-          },
-        },
         include: {
           infrastructureService: {
             include: {
@@ -181,24 +173,13 @@ export class OperationsService {
   }
 
   async createInfrastructureElement(
-    projectId: number,
     createDto: CreateInfrastructureElementDto,
   ): Promise<InfrastructureElementDto> {
-    const projectSdlcStep = await this.prismaService.projectSdlcStep.findFirst({
-      where: { projectId, sdlcStep: { name: 'operations' } },
-    });
-
-    if (!projectSdlcStep) {
-      throw new NotFoundException(
-        `Operations step not found for project ${projectId}`,
-      );
-    }
-
     const element =
       await this.prismaService.operationsInfrastructureElement.create({
+        // @ts-ignore
         data: {
           name: createDto.name,
-          projectSdlcStepId: projectSdlcStep.id,
           infrastructureServiceId: createDto.infrastructureServiceId,
           tags: JSON.stringify(createDto.tags),
         },
@@ -215,18 +196,11 @@ export class OperationsService {
   }
 
   async getInfrastructureElement(
-    projectId: number,
     elementId: number,
   ): Promise<DetailedInfrastructureElementDto> {
     const element =
-      await this.prismaService.operationsInfrastructureElement.findFirst({
-        where: {
-          id: elementId,
-          projectSdlcStep: {
-            projectId,
-            sdlcStep: { name: 'operations' },
-          },
-        },
+      await this.prismaService.operationsInfrastructureElement.findUnique({
+        where: { id: elementId },
         include: {
           infrastructureService: {
             include: {
@@ -247,7 +221,7 @@ export class OperationsService {
 
     if (!element) {
       throw new NotFoundException(
-        `Infrastructure element with ID ${elementId} not found for project ${projectId}`,
+        `Infrastructure element with ID ${elementId} not found`,
       );
     }
 
@@ -286,17 +260,10 @@ export class OperationsService {
   }
 
   async getInfrastructureElementsByTag(
-    projectId: number,
     tag: string,
   ): Promise<InfrastructureElementDto[]> {
     const allElements =
       await this.prismaService.operationsInfrastructureElement.findMany({
-        where: {
-          projectSdlcStep: {
-            projectId,
-            sdlcStep: { name: 'operations' },
-          },
-        },
         include: {
           infrastructureService: {
             include: {
@@ -316,11 +283,14 @@ export class OperationsService {
       });
 
     const filteredElements = allElements.filter((element) => {
-      const tags = this.safeJsonParse(element.tags as string, []);
-      return Array.isArray(tags) && tags.includes(tag);
+      const elementTags = this.safeJsonParse(element.tags as string, []);
+      return elementTags.includes(tag);
     });
 
-    return filteredElements.map(this.mapToInfrastructureElementDto.bind(this));
+    return filteredElements.map((element) => {
+      const dto = this.mapToInfrastructureElementDto(element);
+      return dto;
+    });
   }
 
   private calculateTotalCo2(metricValues: any[]): number {
@@ -404,13 +374,15 @@ export class OperationsService {
       latestConsumption,
     );
 
+    const tags = this.safeJsonParse(element.tags as string, []);
+
     return {
       id: element.id,
       name: element.name,
       type: element.infrastructureService.type,
       category: element.infrastructureService.category,
       cloudProvider: element.infrastructureService.cloudProvider.name,
-      tags: this.safeJsonParse(element.tags, []),
+      tags: tags,
       totalCo2: latestConsumption ? latestConsumption.co2Consumption : 0,
       keyMetrics,
     };

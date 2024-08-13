@@ -4,8 +4,6 @@ import { ProjectService } from './services/project.service';
 import { PrismaService } from './services/prisma.service';
 import { UserFlowService } from './services/userFlow.service';
 import { UserFlowController } from './controllers/userFlow.controller';
-import { SdlcController } from './controllers/sdlc.controller';
-import { SdlcService } from './services/sdlc.service';
 import { OperationsController } from './controllers/operations.controller';
 import { OperationsService } from './services/operations.service';
 import { CicdController } from './controllers/cicd.controller';
@@ -17,7 +15,6 @@ import { HistoricalDataController } from './controllers/historicalData.controlle
   controllers: [
     ProjectController,
     UserFlowController,
-    SdlcController,
     OperationsController,
     CicdController,
     HistoricalDataController,
@@ -26,7 +23,6 @@ import { HistoricalDataController } from './controllers/historicalData.controlle
     ProjectService,
     PrismaService,
     UserFlowService,
-    SdlcService,
     OperationsService,
     CicdService,
     HistoricalDataService,

@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 generator erd {
@@ -11,6 +12,15 @@ datasource db {
   provider     = "mysql"
   url          = env("DATABASE_URL")
   relationMode = "prisma"
+}
+
+enum SdlcStepName {
+  integration_deployment
+  testing
+  development
+  design
+  planning
+  operations
 }
 
 enum InfrastructureElementCategory {
@@ -37,15 +47,6 @@ enum DataType {
   string
 }
 
-enum SdlcStepName {
-  integration_deployment
-  testing
-  development
-  design
-  planning
-  operations
-}
-
 enum IntegrationSubStepName {
   sourcing
   build
@@ -54,15 +55,13 @@ enum IntegrationSubStepName {
 }
 
 model Project {
-  id               Int               @id @default(autoincrement())
-  name             String
-  description      String
-  tags             Json              @default("[]") // Store tags as a JSON array
-  createdAt        DateTime          @default(now()) @map("created_at")
-  projectSdlcSteps ProjectSdlcStep[]
-  cicdPipelines    CicdPipeline[]
-  userFlows        UserFlow[]
-  lastUpdated      DateTime          @updatedAt
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String
+  createdAt   DateTime   @default(now()) @map("created_at")
+  lastUpdated DateTime   @updatedAt
+  tags        Json
+  userFlows   UserFlow[]
 
   @@map("projects")
 }
@@ -70,23 +69,20 @@ model Project {
 model SdlcStep {
   id               Int               @id @default(autoincrement())
   name             SdlcStepName      @unique
-  projectSdlcSteps ProjectSdlcStep[]
 
   @@map("sdlc_steps")
 }
 
-model ProjectSdlcStep {
-  id                               Int                               @id @default(autoincrement())
-  projectId                        Int                               @map("project_id")
-  sdlcStepId                       Int                               @map("sdlc_step_id")
-  project                          Project                           @relation(fields: [projectId], references: [id])
-  sdlcStep                         SdlcStep                          @relation(fields: [sdlcStepId], references: [id])
-  cicdPipelines                    CicdPipeline[]
-  operationsInfrastructureElements OperationsInfrastructureElement[]
+model UserFlow {
+  id             Int      @id @default(autoincrement())
+  projectId      Int      @map("project_id")
+  name           String
+  co2Consumption Float    @map("co2_consumption")
+  createdAt      DateTime @default(now()) @map("created_at")
+  project        Project  @relation(fields: [projectId], references: [id])
 
-  @@unique([projectId, sdlcStepId])
-  @@index([sdlcStepId])
-  @@map("project_sdlc_steps")
+  @@index([projectId])
+  @@map("user_flows")
 }
 
 model CloudProvider {
@@ -113,8 +109,8 @@ model InfrastructureService {
 
 model MetricApplicableService {
   metricDefinitionId Int                        @map("metric_definition_id")
-  metricDefinition   OperationsMetricDefinition @relation(fields: [metricDefinitionId], references: [id])
   serviceId          Int                        @map("service_id")
+  metricDefinition   OperationsMetricDefinition @relation(fields: [metricDefinitionId], references: [id])
   service            InfrastructureService      @relation(fields: [serviceId], references: [id])
 
   @@id([metricDefinitionId, serviceId])
@@ -122,17 +118,13 @@ model MetricApplicableService {
 }
 
 model CicdPipeline {
-  id                Int               @id @default(autoincrement())
-  projectSdlcStepId Int               @map("project_sdlc_step_id")
-  repoName          String            @map("repo_name")
-  branch            String
-  cloudProvider     String            @map("cloud_provider")
-  pipelineName      String            @map("pipeline_name")
-  tags              Json              @default("[]")
-  projectSdlcStep   ProjectSdlcStep   @relation(fields: [projectSdlcStepId], references: [id])
-  cicdPipelineRuns  CicdPipelineRun[]
-  project           Project?          @relation(fields: [projectId], references: [id])
-  projectId         Int?              @map("projects_id")
+  id               Int               @id @default(autoincrement())
+  repoName         String            @map("repo_name")
+  branch           String
+  cloudProvider    String            @map("cloud_provider")
+  pipelineName     String            @map("pipeline_name")
+  tags             Json
+  cicdPipelineRuns CicdPipelineRun[]
 
   @@map("cicd_pipelines")
 }
@@ -163,19 +155,16 @@ model CicdPipelineStepMeasurement {
 }
 
 model OperationsInfrastructureElement {
-  id                      Int                                           @id @default(autoincrement())
+  id                      Int                                          @id @default(autoincrement())
   name                    String
-  projectSdlcStepId       Int                                           @map("project_sdlc_step_id")
-  infrastructureServiceId Int                                           @map("infrastructure_service_id")
-  infrastructureService   InfrastructureService                         @relation(fields: [infrastructureServiceId], references: [id])
-  tags                    Json                                          @default("[]")
-  projectSdlcStep         ProjectSdlcStep                               @relation(fields: [projectSdlcStepId], references: [id])
+  infrastructureServiceId Int                                          @map("infrastructure_service_id")
+  cloudProviderId         Int?
+  tags                    Json
+  infrastructureService   InfrastructureService                        @relation(fields: [infrastructureServiceId], references: [id])
   metricValues            OperationsMetricValue[]
   consumptions            OperationsInfrastructureElementConsumption[]
-  CloudProvider           CloudProvider?                                @relation(fields: [cloudProviderId], references: [id])
-  cloudProviderId         Int?
+  CloudProvider           CloudProvider?                               @relation(fields: [cloudProviderId], references: [id])
 
-  @@index([projectSdlcStepId])
   @@index([infrastructureServiceId])
   @@map("operations_infrastructure_elements")
 }
@@ -224,8 +213,8 @@ model OperationsMetricValue {
 model AllowedMetric {
   id                      Int                        @id @default(autoincrement())
   infrastructureServiceId Int                        @map("infrastructure_service_id")
-  infrastructureService   InfrastructureService      @relation(fields: [infrastructureServiceId], references: [id])
   metricDefinitionId      Int                        @map("metric_definition_id")
+  infrastructureService   InfrastructureService      @relation(fields: [infrastructureServiceId], references: [id])
   metricDefinition        OperationsMetricDefinition @relation(fields: [metricDefinitionId], references: [id])
 
   @@unique([infrastructureServiceId, metricDefinitionId])
@@ -233,14 +222,4 @@ model AllowedMetric {
   @@map("allowed_metrics")
 }
 
-model UserFlow {
-  id             Int      @id @default(autoincrement())
-  projectId      Int      @map("project_id")
-  name           String
-  co2Consumption Float    @map("co2_consumption")
-  createdAt      DateTime @default(now()) @map("created_at")
-  project        Project  @relation(fields: [projectId], references: [id])
 
-  @@index([projectId])
-  @@map("user_flows")
-}

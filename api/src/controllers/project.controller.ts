@@ -28,14 +28,20 @@ export class ProjectController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get project by ID' })
+  @ApiOperation({ summary: 'Get project by ID with SDLC overview' })
   @ApiResponse({
     status: 200,
-    description: 'Return the project',
+    description: 'Return the project with SDLC overview',
     type: ProjectDto,
   })
-  findOne(@Param('id') id: string): Promise<ProjectDto> {
-    return this.projectService.findOne(+id);
+  async findOne(@Param('id') id: string): Promise<ProjectDto> {
+    const project = await this.projectService.findOne(+id);
+    const sdlcOverview = await this.projectService.getSdlcOverview(+id);
+
+    return {
+      ...project,
+      sdlcOverview,
+    };
   }
 
   @Post()

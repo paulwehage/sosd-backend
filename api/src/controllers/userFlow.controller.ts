@@ -13,7 +13,7 @@ import { CreateUserFlowDto, UserFlowDto } from '../dtos/userFlow.dto';
 import { UserFlowService } from '../services/userFlow.service';
 
 @ApiTags('User Flows')
-@Controller('projects/:projectId/user-flows')
+@Controller('/user-flows/:projectId')
 export class UserFlowController {
   constructor(private readonly userFlowService: UserFlowService) {}
 

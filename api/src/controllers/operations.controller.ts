@@ -27,7 +27,7 @@ import {
 } from '../dtos/operations.dto';
 
 @ApiTags('Operations')
-@Controller('projects/:projectId/sdlc/operations')
+@Controller('/operations')
 export class OperationsController {
   constructor(private readonly operationsService: OperationsService) {}
 
@@ -38,50 +38,26 @@ export class OperationsController {
     description: 'The infrastructure element has been successfully created.',
     type: InfrastructureElementDto,
   })
-  @ApiParam({ name: 'projectId', type: 'number' })
   async createInfrastructureElement(
-    @Param('projectId') projectId: string,
     @Body() createDto: CreateInfrastructureElementDto,
   ): Promise<InfrastructureElementDto> {
-    return this.operationsService.createInfrastructureElement(
-      +projectId,
-      createDto,
-    );
-  }
-
-  @Get('infrastructure-elements')
-  @ApiOperation({ summary: 'Get all infrastructure elements for a project' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return all infrastructure elements.',
-    type: [InfrastructureElementDto],
-  })
-  @ApiParam({ name: 'projectId', type: 'number' })
-  async getInfrastructureElements(
-    @Param('projectId') projectId: string,
-  ): Promise<InfrastructureElementDto[]> {
-    return this.operationsService.getInfrastructureElements(+projectId);
+    return this.operationsService.createInfrastructureElement(createDto);
   }
 
   @Get('infrastructure-elements/by-tag')
   @ApiOperation({
-    summary: 'Get infrastructure elements for a project filtered by tag',
+    summary: 'Get infrastructure elements filtered by tag',
   })
   @ApiResponse({
     status: 200,
     description: 'Return infrastructure elements filtered by tag.',
     type: [InfrastructureElementDto],
   })
-  @ApiParam({ name: 'projectId', type: 'number' })
   @ApiQuery({ name: 'tag', required: true, type: String })
   async getInfrastructureElementsByTag(
-    @Param('projectId', ParseIntPipe) projectId: number,
     @Query('tag') tag: string,
   ): Promise<InfrastructureElementDto[]> {
-    return await this.operationsService.getInfrastructureElementsByTag(
-      projectId,
-      tag,
-    );
+    return await this.operationsService.getInfrastructureElementsByTag(tag);
   }
 
   @Get('infrastructure-elements/:elementId')
@@ -91,16 +67,11 @@ export class OperationsController {
     description: 'Return the infrastructure element.',
     type: InfrastructureElementDto,
   })
-  @ApiParam({ name: 'projectId', type: 'number' })
   @ApiParam({ name: 'elementId', type: 'number' })
   async getInfrastructureElement(
-    @Param('projectId') projectId: string,
-    @Param('elementId') elementId: string,
+    @Param('elementId', ParseIntPipe) elementId: number,
   ): Promise<InfrastructureElementDto> {
-    return this.operationsService.getInfrastructureElement(
-      +projectId,
-      +elementId,
-    );
+    return this.operationsService.getInfrastructureElement(elementId);
   }
 
   @Post('infrastructure-elements/:elementId/metric-values')
@@ -112,7 +83,6 @@ export class OperationsController {
     description: 'The metric value has been successfully added.',
     type: MetricValueDto,
   })
-  @ApiParam({ name: 'projectId', type: 'number' })
   @ApiParam({ name: 'elementId', type: 'number' })
   async addMetricValue(
     @Param('elementId', ParseIntPipe) elementId: number,

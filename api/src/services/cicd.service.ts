@@ -25,23 +25,11 @@ export class CicdService {
   private prismaService: PrismaService;
 
   async createPipeline(
-    projectId: number,
     createDto: CreateCicdPipelineDto,
   ): Promise<CicdPipelineDto> {
-    const projectSdlcStep = await this.prismaService.projectSdlcStep.findFirst({
-      where: { projectId, sdlcStep: { name: 'integration_deployment' } },
-    });
-
-    if (!projectSdlcStep) {
-      throw new NotFoundException(
-        `Integration/Deployment step not found for project ${projectId}`,
-      );
-    }
-
     const pipeline = await this.prismaService.cicdPipeline.create({
       data: {
         ...createDto,
-        projectSdlcStepId: projectSdlcStep.id,
         tags: JSON.stringify(createDto.tags),
       },
     });
@@ -53,14 +41,8 @@ export class CicdService {
     };
   }
 
-  async getPipelines(projectId: number): Promise<CicdPipelineDto[]> {
+  async getPipelines(): Promise<CicdPipelineDto[]> {
     const pipelines = await this.prismaService.cicdPipeline.findMany({
-      where: {
-        projectSdlcStep: {
-          projectId,
-          sdlcStep: { name: 'integration_deployment' },
-        },
-      },
       include: {
         cicdPipelineRuns: {
           include: {
@@ -77,18 +59,9 @@ export class CicdService {
     }));
   }
 
-  async getPipeline(
-    projectId: number,
-    pipelineId: number,
-  ): Promise<CicdPipelineDto> {
-    const pipeline = await this.prismaService.cicdPipeline.findFirst({
-      where: {
-        id: pipelineId,
-        projectSdlcStep: {
-          projectId,
-          sdlcStep: { name: 'integration_deployment' },
-        },
-      },
+  async getPipeline(pipelineId: number): Promise<CicdPipelineDto> {
+    const pipeline = await this.prismaService.cicdPipeline.findUnique({
+      where: { id: pipelineId },
       include: {
         cicdPipelineRuns: {
           include: {
@@ -99,9 +72,7 @@ export class CicdService {
     });
 
     if (!pipeline) {
-      throw new NotFoundException(
-        `Pipeline with ID ${pipelineId} not found for project ${projectId}`,
-      );
+      throw new NotFoundException(`Pipeline with ID ${pipelineId} not found`);
     }
 
     return {
@@ -112,11 +83,17 @@ export class CicdService {
   }
 
   async createPipelineRun(
-    projectId: number,
     pipelineId: number,
     createDto: CreateCicdPipelineRunDto,
   ): Promise<CicdPipelineRunDto> {
-    await this.getPipeline(projectId, pipelineId);
+    const pipeline = await this.prismaService.cicdPipeline.findUnique({
+      where: { id: pipelineId },
+    });
+
+    if (!pipeline) {
+      throw new NotFoundException(`Pipeline with ID ${pipelineId} not found`);
+    }
+
     const pipelineRun = await this.prismaService.cicdPipelineRun.create({
       data: {
         ...createDto,
@@ -127,19 +104,10 @@ export class CicdService {
     return { ...pipelineRun, totalCo2: 0 };
   }
 
-  async getPipelineRuns(
-    projectId: number,
-    pipelineId: number,
-  ): Promise<CicdPipelineRunDto[]> {
+  async getPipelineRuns(pipelineId: number): Promise<CicdPipelineRunDto[]> {
     const pipelineRuns = await this.prismaService.cicdPipelineRun.findMany({
       where: {
-        cicdPipeline: {
-          id: pipelineId,
-          projectSdlcStep: {
-            projectId,
-            sdlcStep: { name: 'integration_deployment' },
-          },
-        },
+        cicdPipelineId: pipelineId,
       },
       include: {
         cicdPipelineStepMeasurements: true,
@@ -153,26 +121,25 @@ export class CicdService {
   }
 
   async createStepMeasurement(
-    projectId: number,
     pipelineId: number,
     runId: number,
     createDto: CreateCicdPipelineStepMeasurementDto,
   ): Promise<CicdPipelineStepMeasurementDto> {
-    // Transform empty strings to null
-    const transformedDto = {
-      ...createDto,
-      integrationSubStepName:
-        // @ts-ignore
-        createDto.integrationSubStepName === ''
-          ? null
-          : createDto.integrationSubStepName,
-      deploymentStage:
-        // @ts-ignore
-        createDto.deploymentStage === '' ? null : createDto.deploymentStage,
-    };
+    const pipelineRun = await this.prismaService.cicdPipelineRun.findFirst({
+      where: {
+        id: runId,
+        cicdPipelineId: pipelineId,
+      },
+    });
+
+    if (!pipelineRun) {
+      throw new NotFoundException(
+        `Pipeline run with ID ${runId} not found for pipeline ${pipelineId}`,
+      );
+    }
 
     // Validate step name
-    if (!Object.values(CicdStepName).includes(transformedDto.stepName)) {
+    if (!Object.values(CicdStepName).includes(createDto.stepName)) {
       throw new BadRequestException(
         `Invalid step name. Available options are: ${Object.values(CicdStepName).join(', ')}`,
       );
@@ -180,9 +147,9 @@ export class CicdService {
 
     // Validate integration sub-step name if present
     if (
-      transformedDto.integrationSubStepName !== null &&
+      createDto.integrationSubStepName &&
       !Object.values(IntegrationSubStepName).includes(
-        transformedDto.integrationSubStepName as IntegrationSubStepName,
+        createDto.integrationSubStepName,
       )
     ) {
       throw new BadRequestException(
@@ -192,92 +159,30 @@ export class CicdService {
 
     // Validate deployment stage if present
     if (
-      transformedDto.deploymentStage !== null &&
-      !Object.values(DeploymentSubStepName).includes(
-        transformedDto.deploymentStage as DeploymentSubStepName,
-      )
+      createDto.deploymentStage &&
+      !Object.values(DeploymentSubStepName).includes(createDto.deploymentStage)
     ) {
       throw new BadRequestException(
         `Invalid deployment stage. Available options are: ${Object.values(DeploymentSubStepName).join(', ')}`,
       );
     }
 
-    // Validate combination of step name and sub-steps
-    if (transformedDto.stepName === CicdStepName.integration) {
-      if (!transformedDto.integrationSubStepName) {
-        throw new BadRequestException(
-          'Integration step must have an integration sub-step name',
-        );
-      }
-      if (transformedDto.deploymentStage) {
-        throw new BadRequestException(
-          'Integration step should not have a deployment stage',
-        );
-      }
-    } else if (transformedDto.stepName === CicdStepName.deployment) {
-      if (!transformedDto.deploymentStage) {
-        throw new BadRequestException(
-          'Deployment step must have a deployment stage',
-        );
-      }
-      if (transformedDto.integrationSubStepName) {
-        throw new BadRequestException(
-          'Deployment step should not have an integration sub-step name',
-        );
-      }
-    } else {
-      if (
-        transformedDto.integrationSubStepName ||
-        transformedDto.deploymentStage
-      ) {
-        throw new BadRequestException(
-          'Other steps should not have integration sub-step name or deployment stage',
-        );
-      }
-    }
-
-    const pipelineRun = await this.prismaService.cicdPipelineRun.findFirst({
-      where: {
-        id: runId,
-        cicdPipeline: {
-          id: pipelineId,
-          projectSdlcStep: {
-            projectId,
-            sdlcStep: { name: 'integration_deployment' },
-          },
-        },
-      },
-    });
-
-    if (!pipelineRun) {
-      throw new NotFoundException(
-        `Pipeline run with ID ${runId} not found for pipeline ${pipelineId} in project ${projectId}`,
-      );
-    }
-
     return this.prismaService.cicdPipelineStepMeasurement.create({
       data: {
-        ...transformedDto,
+        ...createDto,
         cicdPipelineRunId: runId,
       },
     });
   }
 
   async getStepMeasurements(
-    projectId: number,
     pipelineId: number,
     runId: number,
   ): Promise<CicdPipelineStepMeasurementDto[]> {
     const pipelineRun = await this.prismaService.cicdPipelineRun.findFirst({
       where: {
         id: runId,
-        cicdPipeline: {
-          id: pipelineId,
-          projectSdlcStep: {
-            projectId,
-            sdlcStep: { name: 'integration_deployment' },
-          },
-        },
+        cicdPipelineId: pipelineId,
       },
       include: {
         cicdPipelineStepMeasurements: true,
@@ -286,24 +191,15 @@ export class CicdService {
 
     if (!pipelineRun) {
       throw new NotFoundException(
-        `Pipeline run with ID ${runId} not found for pipeline ${pipelineId} in project ${projectId}`,
+        `Pipeline run with ID ${runId} not found for pipeline ${pipelineId}`,
       );
     }
 
     return pipelineRun.cicdPipelineStepMeasurements;
   }
 
-  async getPipelinesByTag(
-    projectId: number,
-    tag: string,
-  ): Promise<CicdPipelineDto[]> {
+  async getPipelinesByTag(tag: string): Promise<CicdPipelineDto[]> {
     const allPipelines = await this.prismaService.cicdPipeline.findMany({
-      where: {
-        projectSdlcStep: {
-          projectId,
-          sdlcStep: { name: 'integration_deployment' },
-        },
-      },
       include: {
         cicdPipelineRuns: {
           include: {
@@ -314,23 +210,34 @@ export class CicdService {
     });
 
     const filteredPipelines = allPipelines.filter((pipeline) => {
-      const tags = this.safeJsonParse(pipeline.tags as string, []);
-      return Array.isArray(tags) && tags.includes(tag);
+      const pipelineTags = this.safeJsonParse(pipeline.tags as string, []);
+      console.log(
+        `Pipeline ID: ${pipeline.id}, Tags: ${JSON.stringify(pipelineTags)}`,
+      );
+      return pipelineTags.includes(tag);
     });
 
-    return filteredPipelines.map((pipeline) => ({
-      ...pipeline,
-      totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
-      tags: this.safeJsonParse(pipeline.tags as string, []),
-    }));
+    return filteredPipelines.map((pipeline) => {
+      const dto = this.mapToCicdPipelineDto(pipeline);
+      return dto;
+    });
   }
 
   private safeJsonParse(jsonString: string, defaultValue: any = null) {
     try {
       return JSON.parse(jsonString);
     } catch (error) {
+      console.warn(`Failed to parse JSON: ${jsonString}. Using default value.`);
       return defaultValue;
     }
+  }
+
+  private mapToCicdPipelineDto(pipeline: any): CicdPipelineDto {
+    return {
+      ...pipeline,
+      totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
+      tags: this.safeJsonParse(pipeline.tags as string, []),
+    };
   }
 
   private calculateTotalCo2ForPipeline(pipeline: any): number {
