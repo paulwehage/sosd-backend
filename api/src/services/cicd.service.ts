@@ -30,20 +30,27 @@ export class CicdService {
     const pipeline = await this.prismaService.cicdPipeline.create({
       data: {
         ...createDto,
-        tags: JSON.stringify(createDto.tags),
+        tags: {
+          connectOrCreate: createDto.tags.map(tag => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
       },
+      include: { tags: true },
     });
 
     return {
       ...pipeline,
       totalCo2: 0,
-      tags: JSON.parse(pipeline.tags as string),
+      tags: pipeline.tags.map(tag => tag.name),
     };
   }
 
   async getPipelines(): Promise<CicdPipelineDto[]> {
     const pipelines = await this.prismaService.cicdPipeline.findMany({
       include: {
+        tags: true,
         cicdPipelineRuns: {
           include: {
             cicdPipelineStepMeasurements: true,
@@ -55,7 +62,7 @@ export class CicdService {
     return pipelines.map((pipeline) => ({
       ...pipeline,
       totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
-      tags: JSON.parse(pipeline.tags as string),
+      tags: pipeline.tags.map(tag => tag.name),
     }));
   }
 
@@ -63,6 +70,7 @@ export class CicdService {
     const pipeline = await this.prismaService.cicdPipeline.findUnique({
       where: { id: pipelineId },
       include: {
+        tags: true,
         cicdPipelineRuns: {
           include: {
             cicdPipelineStepMeasurements: true,
@@ -78,7 +86,7 @@ export class CicdService {
     return {
       ...pipeline,
       totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
-      tags: JSON.parse(pipeline.tags as string),
+      tags: pipeline.tags.map(tag => tag.name),
     };
   }
 
@@ -198,9 +206,43 @@ export class CicdService {
     return pipelineRun.cicdPipelineStepMeasurements;
   }
 
-  async getPipelinesByTag(tag: string): Promise<CicdPipelineDto[]> {
-    const allPipelines = await this.prismaService.cicdPipeline.findMany({
+  async getPipelinesByTags(
+    tags: string[],
+    matchAll: boolean = false
+  ): Promise<CicdPipelineDto[]> {
+    console.log('Service Tags:', tags);
+    console.log('Service MatchAll:', matchAll);
+
+    let whereCondition;
+
+    if (matchAll) {
+      whereCondition = {
+        AND: tags.map(tag => ({
+          tags: {
+            some: {
+              name: tag
+            }
+          }
+        }))
+      };
+    } else {
+      whereCondition = {
+        tags: {
+          some: {
+            name: {
+              in: tags
+            }
+          }
+        }
+      };
+    }
+
+    console.log('Where condition:', JSON.stringify(whereCondition, null, 2));
+
+    const pipelines = await this.prismaService.cicdPipeline.findMany({
+      where: whereCondition,
       include: {
+        tags: true,
         cicdPipelineRuns: {
           include: {
             cicdPipelineStepMeasurements: true,
@@ -209,18 +251,10 @@ export class CicdService {
       },
     });
 
-    const filteredPipelines = allPipelines.filter((pipeline) => {
-      const pipelineTags = this.safeJsonParse(pipeline.tags as string, []);
-      console.log(
-        `Pipeline ID: ${pipeline.id}, Tags: ${JSON.stringify(pipelineTags)}`,
-      );
-      return pipelineTags.includes(tag);
-    });
+    console.log('Found pipelines:', pipelines.length);
+    console.log('Found pipelines:', pipelines.map(p => ({ id: p.id, name: p.pipelineName, tags: p.tags.map(t => t.name) })));
 
-    return filteredPipelines.map((pipeline) => {
-      const dto = this.mapToCicdPipelineDto(pipeline);
-      return dto;
-    });
+    return pipelines.map(this.mapToCicdPipelineDto.bind(this));
   }
 
   private safeJsonParse(jsonString: string, defaultValue: any = null) {
@@ -234,9 +268,13 @@ export class CicdService {
 
   private mapToCicdPipelineDto(pipeline: any): CicdPipelineDto {
     return {
-      ...pipeline,
+      id: pipeline.id,
+      repoName: pipeline.repoName,
+      branch: pipeline.branch,
+      cloudProvider: pipeline.cloudProvider,
+      pipelineName: pipeline.pipelineName,
       totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
-      tags: this.safeJsonParse(pipeline.tags as string, []),
+      tags: pipeline.tags.map(tag => tag.name),
     };
   }
 

@@ -55,15 +55,26 @@ enum IntegrationSubStepName {
 }
 
 model Project {
-  id          Int        @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   description String
-  createdAt   DateTime   @default(now()) @map("created_at")
-  lastUpdated DateTime   @updatedAt
-  tags        Json
+  createdAt   DateTime @default(now()) @map("created_at")
+  lastUpdated DateTime @updatedAt
+  tags        Tag[]
   userFlows   UserFlow[]
 
   @@map("projects")
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String
+  projects  Project[]
+  pipelines CicdPipeline[]
+  infrastructureElements OperationsInfrastructureElement[]
+
+  @@unique([name])
+  @@map("tags")
 }
 
 model SdlcStep {
@@ -123,7 +134,7 @@ model CicdPipeline {
   branch           String
   cloudProvider    String            @map("cloud_provider")
   pipelineName     String            @map("pipeline_name")
-  tags             Json
+  tags             Tag[]
   cicdPipelineRuns CicdPipelineRun[]
 
   @@map("cicd_pipelines")
@@ -159,7 +170,7 @@ model OperationsInfrastructureElement {
   name                    String
   infrastructureServiceId Int                                          @map("infrastructure_service_id")
   cloudProviderId         Int?
-  tags                    Json
+  tags                    Tag[]
   infrastructureService   InfrastructureService                        @relation(fields: [infrastructureServiceId], references: [id])
   metricValues            OperationsMetricValue[]
   consumptions            OperationsInfrastructureElementConsumption[]

@@ -1,10 +1,4 @@
-import {
-  PrismaClient,
-  DataType,
-  CicdStepName,
-  IntegrationSubStepName,
-  DeploymentSubStepName,
-} from '@prisma/client';
+import { PrismaClient, SdlcStepName, DataType, CicdStepName, IntegrationSubStepName, DeploymentSubStepName } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -90,13 +84,23 @@ async function main() {
   }
   console.log('Infrastructure Services seeded');
 
+  // Helper function to create or connect tags
+  async function createOrConnectTags(tags: string[]) {
+    return tags.map(tag => ({
+      where: { name: tag },
+      create: { name: tag },
+    }));
+  }
+
   // Seed Projects and related data
   for (const projectData of seedData.projects) {
     const project = await prisma.project.create({
       data: {
         name: projectData.name,
         description: projectData.description,
-        tags: JSON.stringify(projectData.tags),
+        tags: {
+          connectOrCreate: await createOrConnectTags(projectData.tags),
+        },
       },
     });
 
@@ -107,7 +111,9 @@ async function main() {
         data: {
           name: element.name,
           infrastructureServiceId: service.id,
-          tags: JSON.stringify([...element.tags, project.name]),
+          tags: {
+            connectOrCreate: await createOrConnectTags([...element.tags, project.name]),
+          },
         },
       });
 
@@ -189,7 +195,9 @@ async function main() {
           branch: pipelineData.branch,
           cloudProvider: pipelineData.cloudProvider,
           pipelineName: pipelineData.name,
-          tags: JSON.stringify([...pipelineData.tags, project.name]),
+          tags: {
+            connectOrCreate: await createOrConnectTags([...pipelineData.tags, project.name]),
+          },
         },
       });
 
@@ -198,12 +206,12 @@ async function main() {
         startDate.setDate(startDate.getDate() - (NUM_WEEKS - week) * 7);
         const endDate = new Date(
           startDate.getTime() +
-            generateValue(
-              pipelineData.baseRunTime,
-              pipelineData.runTimeGrowth,
-              week * 7,
-            ) *
-              1000,
+          generateValue(
+            pipelineData.baseRunTime,
+            pipelineData.runTimeGrowth,
+            week * 7,
+          ) *
+          1000,
         );
 
         const pipelineRun = await prisma.cicdPipelineRun.create({

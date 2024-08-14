@@ -2,7 +2,7 @@ import {
   Body,
   Controller,
   Get,
-  Param,
+  Param, ParseArrayPipe, ParseBoolPipe,
   ParseIntPipe,
   Post,
   Query,
@@ -44,20 +44,20 @@ export class OperationsController {
     return this.operationsService.createInfrastructureElement(createDto);
   }
 
-  @Get('infrastructure-elements/by-tag')
-  @ApiOperation({
-    summary: 'Get infrastructure elements filtered by tag',
-  })
+  @Get('infrastructure-elements')
+  @ApiOperation({ summary: 'Get infrastructure elements filtered by tags' })
   @ApiResponse({
     status: 200,
-    description: 'Return infrastructure elements filtered by tag.',
+    description: 'Return infrastructure elements filtered by tags.',
     type: [InfrastructureElementDto],
   })
-  @ApiQuery({ name: 'tag', required: true, type: String })
-  async getInfrastructureElementsByTag(
-    @Query('tag') tag: string,
+  @ApiQuery({ name: 'tags', required: true, type: [String], isArray: true })
+  @ApiQuery({ name: 'matchAll', required: false, type: Boolean })
+  async getInfrastructureElementsByTags(
+    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' })) tags: string[],
+    @Query('matchAll', new ParseBoolPipe({ optional: true })) matchAll: boolean = false
   ): Promise<InfrastructureElementDto[]> {
-    return await this.operationsService.getInfrastructureElementsByTag(tag);
+    return await this.operationsService.getInfrastructureElementsByTags(tags, matchAll);
   }
 
   @Get('infrastructure-elements/:elementId')

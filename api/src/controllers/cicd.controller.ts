@@ -5,7 +5,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
-  Query,
+  Query, ParseArrayPipe, ParseBoolPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -42,20 +42,22 @@ export class CicdController {
     return this.cicdService.createPipeline(createDto);
   }
 
-  @Get('by-tag')
-  @ApiOperation({
-    summary: 'Get CI/CD pipelines filtered by tag',
-  })
+  @Get()
+  @ApiOperation({ summary: 'Get CI/CD pipelines filtered by tags' })
   @ApiResponse({
     status: 200,
-    description: 'Return CI/CD pipelines filtered by tag.',
+    description: 'Return CI/CD pipelines filtered by tags.',
     type: [CicdPipelineDto],
   })
-  @ApiQuery({ name: 'tag', required: true, type: String })
-  async getPipelinesByTag(
-    @Query('tag') tag: string,
+  @ApiQuery({ name: 'tags', required: true, type: [String], isArray: true })
+  @ApiQuery({ name: 'matchAll', required: false, type: Boolean })
+  async getPipelinesByTags(
+    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' })) tags: string[],
+    @Query('matchAll', new ParseBoolPipe({ optional: true })) matchAll: boolean = false
   ): Promise<CicdPipelineDto[]> {
-    return this.cicdService.getPipelinesByTag(tag);
+    console.log('Controller Tags:', tags);
+    console.log('Controller MatchAll:', matchAll);
+    return await this.cicdService.getPipelinesByTags(tags, matchAll);
   }
 
   @Get(':pipelineId')

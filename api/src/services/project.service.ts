@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
-import { Project } from '@prisma/client';
+import { Project, Tag } from '@prisma/client';
 import {
   CreateProjectDto,
+  UpdateProjectDto,
   ProjectDto,
   SdlcOverviewDto,
   SdlcStepInfoDto,
@@ -13,24 +14,27 @@ export class ProjectService {
   constructor(private prismaService: PrismaService) {}
 
   private mapToDto(
-    project: Project,
+    project: Project & { tags: Tag[] },
     sdlcOverview?: SdlcOverviewDto,
   ): ProjectDto {
     return {
       ...project,
-      tags: JSON.parse(project.tags as string),
+      tags: project.tags,
       sdlcOverview: sdlcOverview || null,
     };
   }
 
   async findAll(): Promise<ProjectDto[]> {
-    const projects = await this.prismaService.project.findMany();
+    const projects = await this.prismaService.project.findMany({
+      include: { tags: true },
+    });
     return projects.map((project) => this.mapToDto(project));
   }
 
   async findOne(id: number): Promise<ProjectDto> {
     const project = await this.prismaService.project.findUnique({
       where: { id },
+      include: { tags: true },
     });
 
     if (!project) {
@@ -42,25 +46,42 @@ export class ProjectService {
   }
 
   async create(createProjectDto: CreateProjectDto): Promise<ProjectDto> {
+    const { tags, ...projectData } = createProjectDto;
     const project = await this.prismaService.project.create({
       data: {
-        ...createProjectDto,
-        tags: JSON.stringify(createProjectDto.tags),
+        ...projectData,
+        tags: {
+          connectOrCreate: tags.map((tag) => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
+        },
       },
+      include: { tags: true },
     });
     return this.mapToDto(project);
   }
 
   async update(
     id: number,
-    updateProjectDto: CreateProjectDto,
+    updateProjectDto: UpdateProjectDto,
   ): Promise<ProjectDto> {
+    const { tags, ...projectData } = updateProjectDto;
     const project = await this.prismaService.project.update({
       where: { id },
       data: {
-        ...updateProjectDto,
-        tags: JSON.stringify(updateProjectDto.tags),
+        ...projectData,
+        tags: tags
+          ? {
+              set: [],
+              connectOrCreate: tags.map((tag) => ({
+                where: { name: tag },
+                create: { name: tag },
+              })),
+            }
+          : undefined,
       },
+      include: { tags: true },
     });
     return this.mapToDto(project);
   }
@@ -72,14 +93,14 @@ export class ProjectService {
   async getSdlcOverview(projectId: number): Promise<SdlcOverviewDto> {
     const project = await this.prismaService.project.findUnique({
       where: { id: projectId },
-      select: { tags: true },
+      include: { tags: true },
     });
 
     if (!project) {
       throw new NotFoundException(`Project with ID ${projectId} not found`);
     }
 
-    const projectTags = JSON.parse(project.tags as string);
+    const projectTags = project.tags.map((tag) => tag.name);
 
     const sdlcSteps = [
       'design',
@@ -96,21 +117,25 @@ export class ProjectService {
         let stepTotalCo2 = 0;
 
         if (stepName === 'integration_deployment') {
-          // Fetch all pipelines and filter in application logic
-          const allPipelines = await this.prismaService.cicdPipeline.findMany({
-            include: {
-              cicdPipelineRuns: {
-                include: {
-                  cicdPipelineStepMeasurements: true,
+          const matchingPipelines =
+            await this.prismaService.cicdPipeline.findMany({
+              where: {
+                tags: {
+                  some: {
+                    name: {
+                      in: projectTags,
+                    },
+                  },
                 },
               },
-            },
-          });
-
-          const matchingPipelines = allPipelines.filter((pipeline) => {
-            const pipelineTags = JSON.parse(pipeline.tags as string);
-            return projectTags.some((tag) => pipelineTags.includes(tag));
-          });
+              include: {
+                cicdPipelineRuns: {
+                  include: {
+                    cicdPipelineStepMeasurements: true,
+                  },
+                },
+              },
+            });
 
           for (const pipeline of matchingPipelines) {
             for (const run of pipeline.cicdPipelineRuns) {
@@ -120,18 +145,21 @@ export class ProjectService {
             }
           }
         } else if (stepName === 'operations') {
-          // Fetch all infrastructure elements and filter in application logic
-          const allElements =
+          const matchingElements =
             await this.prismaService.operationsInfrastructureElement.findMany({
+              where: {
+                tags: {
+                  some: {
+                    name: {
+                      in: projectTags,
+                    },
+                  },
+                },
+              },
               include: {
                 consumptions: true,
               },
             });
-
-          const matchingElements = allElements.filter((element) => {
-            const elementTags = JSON.parse(element.tags as string);
-            return projectTags.some((tag) => elementTags.includes(tag));
-          });
 
           for (const element of matchingElements) {
             for (const consumption of element.consumptions) {

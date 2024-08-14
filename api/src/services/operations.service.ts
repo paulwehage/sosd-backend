@@ -36,30 +36,6 @@ export class OperationsService {
   @Inject(PrismaService)
   private prismaService: PrismaService;
 
-  async getInfrastructureElements(): Promise<InfrastructureElementDto[]> {
-    const elements =
-      await this.prismaService.operationsInfrastructureElement.findMany({
-        include: {
-          infrastructureService: {
-            include: {
-              cloudProvider: true,
-            },
-          },
-          metricValues: {
-            include: {
-              metricDefinition: true,
-            },
-          },
-          consumptions: {
-            orderBy: { date: 'desc' },
-            take: 1,
-          },
-        },
-      });
-
-    return elements.map(this.mapToInfrastructureElementDto.bind(this));
-  }
-
   async getInfrastructureServices(): Promise<InfrastructureServiceDto[]> {
     const services = await this.prismaService.infrastructureService.findMany({
       include: { cloudProvider: true },
@@ -175,22 +151,26 @@ export class OperationsService {
   async createInfrastructureElement(
     createDto: CreateInfrastructureElementDto,
   ): Promise<InfrastructureElementDto> {
-    const element =
-      await this.prismaService.operationsInfrastructureElement.create({
-        // @ts-ignore
-        data: {
-          name: createDto.name,
-          infrastructureServiceId: createDto.infrastructureServiceId,
-          tags: JSON.stringify(createDto.tags),
+    const element = await this.prismaService.operationsInfrastructureElement.create({
+      data: {
+        name: createDto.name,
+        infrastructureServiceId: createDto.infrastructureServiceId,
+        tags: {
+          connectOrCreate: createDto.tags.map(tag => ({
+            where: { name: tag },
+            create: { name: tag },
+          })),
         },
-        include: {
-          infrastructureService: {
-            include: {
-              cloudProvider: true,
-            },
+      },
+      include: {
+        infrastructureService: {
+          include: {
+            cloudProvider: true,
           },
         },
-      });
+        tags: true,
+      },
+    });
 
     return this.mapToInfrastructureElementDto(element);
   }
@@ -198,31 +178,29 @@ export class OperationsService {
   async getInfrastructureElement(
     elementId: number,
   ): Promise<DetailedInfrastructureElementDto> {
-    const element =
-      await this.prismaService.operationsInfrastructureElement.findUnique({
-        where: { id: elementId },
-        include: {
-          infrastructureService: {
-            include: {
-              cloudProvider: true,
-            },
-          },
-          metricValues: {
-            include: {
-              metricDefinition: true,
-            },
-          },
-          consumptions: {
-            orderBy: { date: 'desc' },
-            take: 1,
+    const element = await this.prismaService.operationsInfrastructureElement.findUnique({
+      where: { id: elementId },
+      include: {
+        infrastructureService: {
+          include: {
+            cloudProvider: true,
           },
         },
-      });
+        tags: true,
+        metricValues: {
+          include: {
+            metricDefinition: true,
+          },
+        },
+        consumptions: {
+          orderBy: { date: 'desc' },
+          take: 1,
+        },
+      },
+    });
 
     if (!element) {
-      throw new NotFoundException(
-        `Infrastructure element with ID ${elementId} not found`,
-      );
+      throw new NotFoundException(`Infrastructure element with ID ${elementId} not found`);
     }
 
     return this.mapToDetailedInfrastructureElementDto(element);
@@ -259,44 +237,57 @@ export class OperationsService {
     return this.mapToMetricDefinitionDto(metricDefinition);
   }
 
-  async getInfrastructureElementsByTag(
-    tag: string,
+  async getInfrastructureElementsByTags(
+    tags: string[],
+    matchAll: boolean = false
   ): Promise<InfrastructureElementDto[]> {
-    const allElements =
-      await this.prismaService.operationsInfrastructureElement.findMany({
-        include: {
-          infrastructureService: {
-            include: {
-              cloudProvider: true,
-            },
-          },
-          metricValues: {
-            include: {
-              metricDefinition: true,
-            },
-          },
-          consumptions: {
-            orderBy: { date: 'desc' },
-            take: 1,
+
+    let whereCondition;
+
+    if (matchAll) {
+      whereCondition = {
+        AND: tags.map(tag => ({
+          tags: {
+            some: {
+              name: tag
+            }
+          }
+        }))
+      };
+    } else {
+      whereCondition = {
+        tags: {
+          some: {
+            name: {
+              in: tags
+            }
+          }
+        }
+      };
+    }
+
+    const elements = await this.prismaService.operationsInfrastructureElement.findMany({
+      where: whereCondition,
+      include: {
+        infrastructureService: {
+          include: {
+            cloudProvider: true,
           },
         },
-      });
-
-    const filteredElements = allElements.filter((element) => {
-      const elementTags = this.safeJsonParse(element.tags as string, []);
-      return elementTags.includes(tag);
+        tags: true,
+        metricValues: {
+          include: {
+            metricDefinition: true,
+          },
+        },
+        consumptions: {
+          orderBy: { date: 'desc' },
+          take: 1,
+        },
+      },
     });
 
-    return filteredElements.map((element) => {
-      const dto = this.mapToInfrastructureElementDto(element);
-      return dto;
-    });
-  }
-
-  private calculateTotalCo2(metricValues: any[]): number {
-    return metricValues
-      .filter((mv) => mv.metricDefinition.metricName === 'co2_consumption')
-      .reduce((total, mv) => total + (mv.valueDecimal || 0), 0);
+    return elements.map(this.mapToInfrastructureElementDto.bind(this));
   }
 
   private getMetricValue(metricValue: any): number | string {
@@ -374,15 +365,13 @@ export class OperationsService {
       latestConsumption,
     );
 
-    const tags = this.safeJsonParse(element.tags as string, []);
-
     return {
       id: element.id,
       name: element.name,
       type: element.infrastructureService.type,
       category: element.infrastructureService.category,
       cloudProvider: element.infrastructureService.cloudProvider.name,
-      tags: tags,
+      tags: element.tags.map((tag: { name: any; }) => tag.name),
       totalCo2: latestConsumption ? latestConsumption.co2Consumption : 0,
       keyMetrics,
     };
