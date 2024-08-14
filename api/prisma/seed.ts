@@ -1,4 +1,10 @@
-import { PrismaClient, SdlcStepName, DataType, CicdStepName, IntegrationSubStepName, DeploymentSubStepName } from '@prisma/client';
+import {
+  PrismaClient,
+  DataType,
+  CicdStepName,
+  IntegrationSubStepName,
+  DeploymentSubStepName,
+} from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -86,7 +92,7 @@ async function main() {
 
   // Helper function to create or connect tags
   async function createOrConnectTags(tags: string[]) {
-    return tags.map(tag => ({
+    return tags.map((tag) => ({
       where: { name: tag },
       create: { name: tag },
     }));
@@ -112,7 +118,10 @@ async function main() {
           name: element.name,
           infrastructureServiceId: service.id,
           tags: {
-            connectOrCreate: await createOrConnectTags([...element.tags, project.name]),
+            connectOrCreate: await createOrConnectTags([
+              ...element.tags,
+              project.name,
+            ]),
           },
         },
       });
@@ -196,7 +205,10 @@ async function main() {
           cloudProvider: pipelineData.cloudProvider,
           pipelineName: pipelineData.name,
           tags: {
-            connectOrCreate: await createOrConnectTags([...pipelineData.tags, project.name]),
+            connectOrCreate: await createOrConnectTags([
+              ...pipelineData.tags,
+              project.name,
+            ]),
           },
         },
       });
@@ -206,12 +218,12 @@ async function main() {
         startDate.setDate(startDate.getDate() - (NUM_WEEKS - week) * 7);
         const endDate = new Date(
           startDate.getTime() +
-          generateValue(
-            pipelineData.baseRunTime,
-            pipelineData.runTimeGrowth,
-            week * 7,
-          ) *
-          1000,
+            generateValue(
+              pipelineData.baseRunTime,
+              pipelineData.runTimeGrowth,
+              week * 7,
+            ) *
+              1000,
         );
 
         const pipelineRun = await prisma.cicdPipelineRun.create({

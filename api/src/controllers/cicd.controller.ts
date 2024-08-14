@@ -5,7 +5,9 @@ import {
   Body,
   Param,
   ParseIntPipe,
-  Query, ParseArrayPipe, ParseBoolPipe,
+  Query,
+  ParseArrayPipe,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -52,8 +54,10 @@ export class CicdController {
   @ApiQuery({ name: 'tags', required: true, type: [String], isArray: true })
   @ApiQuery({ name: 'matchAll', required: false, type: Boolean })
   async getPipelinesByTags(
-    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' })) tags: string[],
-    @Query('matchAll', new ParseBoolPipe({ optional: true })) matchAll: boolean = false
+    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' }))
+    tags: string[],
+    @Query('matchAll', new ParseBoolPipe({ optional: true }))
+    matchAll: boolean = false,
   ): Promise<CicdPipelineDto[]> {
     console.log('Controller Tags:', tags);
     console.log('Controller MatchAll:', matchAll);

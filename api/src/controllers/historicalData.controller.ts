@@ -1,5 +1,11 @@
 import { Controller, Get, Query, ParseArrayPipe, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiParam,
+} from '@nestjs/swagger';
 import { HistoricalDataService } from '../services/historicalData.service';
 
 @ApiTags('Historical Data')
@@ -13,13 +19,26 @@ export class HistoricalDataController {
     status: 200,
     description: 'Historical data retrieved successfully.',
   })
-  @ApiQuery({ name: 'startDate', required: true, type: String, description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
-  @ApiQuery({ name: 'endDate', required: true, type: String, description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: true,
+    type: String,
+    description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: true,
+    type: String,
+    description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
   async getCrossProjectHistoricalData(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.historicalDataService.getCrossProjectHistoricalData(startDate, endDate);
+    return this.historicalDataService.getCrossProjectHistoricalData(
+      startDate,
+      endDate,
+    );
   }
 
   @Get('projects/sdlc')
@@ -29,14 +48,29 @@ export class HistoricalDataController {
     description: 'Historical data retrieved successfully.',
   })
   @ApiQuery({ name: 'tags', required: true, type: [String] })
-  @ApiQuery({ name: 'startDate', required: true, type: String, description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
-  @ApiQuery({ name: 'endDate', required: true, type: String, description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: true,
+    type: String,
+    description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: true,
+    type: String,
+    description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
   async getProjectSdlcHistoricalData(
-    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' })) tags: string[],
+    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' }))
+    tags: string[],
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.historicalDataService.getProjectSdlcHistoricalData(tags, startDate, endDate);
+    return this.historicalDataService.getProjectSdlcHistoricalData(
+      tags,
+      startDate,
+      endDate,
+    );
   }
 
   @Get('projects/operations')
@@ -46,14 +80,29 @@ export class HistoricalDataController {
     description: 'Historical data retrieved successfully.',
   })
   @ApiQuery({ name: 'tags', required: true, type: [String] })
-  @ApiQuery({ name: 'startDate', required: true, type: String, description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
-  @ApiQuery({ name: 'endDate', required: true, type: String, description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: true,
+    type: String,
+    description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: true,
+    type: String,
+    description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
   async getOperationsHistoricalData(
-    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' })) tags: string[],
+    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' }))
+    tags: string[],
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.historicalDataService.getProjectSdlcHistoricalData(tags, startDate, endDate);
+    return this.historicalDataService.getProjectSdlcHistoricalData(
+      tags,
+      startDate,
+      endDate,
+    );
   }
 
   @Get('projects/cicd')
@@ -63,14 +112,29 @@ export class HistoricalDataController {
     description: 'Historical data retrieved successfully.',
   })
   @ApiQuery({ name: 'tags', required: true, type: [String] })
-  @ApiQuery({ name: 'startDate', required: true, type: String, description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
-  @ApiQuery({ name: 'endDate', required: true, type: String, description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: true,
+    type: String,
+    description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: true,
+    type: String,
+    description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
   async getCicdHistoricalData(
-    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' })) tags: string[],
+    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' }))
+    tags: string[],
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.historicalDataService.getProjectSdlcHistoricalData(tags, startDate, endDate);
+    return this.historicalDataService.getProjectSdlcHistoricalData(
+      tags,
+      startDate,
+      endDate,
+    );
   }
 
   @Get('projects/services/:serviceId')
@@ -83,15 +147,31 @@ export class HistoricalDataController {
   })
   @ApiParam({ name: 'serviceId', required: true, type: String })
   @ApiQuery({ name: 'tags', required: true, type: [String] })
-  @ApiQuery({ name: 'startDate', required: true, type: String, description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
-  @ApiQuery({ name: 'endDate', required: true, type: String, description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: true,
+    type: String,
+    description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: true,
+    type: String,
+    description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
   async getProjectServiceHistoricalData(
     @Param('serviceId') serviceId: string,
-    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' })) tags: string[],
+    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' }))
+    tags: string[],
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.historicalDataService.getProjectServiceHistoricalData(tags, serviceId, startDate, endDate);
+    return this.historicalDataService.getProjectServiceHistoricalData(
+      tags,
+      serviceId,
+      startDate,
+      endDate,
+    );
   }
 
   @Get('projects/pipelines/:pipelineId')
@@ -104,14 +184,30 @@ export class HistoricalDataController {
   })
   @ApiParam({ name: 'pipelineId', required: true, type: String })
   @ApiQuery({ name: 'tags', required: true, type: [String] })
-  @ApiQuery({ name: 'startDate', required: true, type: String, description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
-  @ApiQuery({ name: 'endDate', required: true, type: String, description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: true,
+    type: String,
+    description: 'Start date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: true,
+    type: String,
+    description: 'End date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+  })
   async getProjectPipelineHistoricalData(
     @Param('pipelineId') pipelineId: string,
-    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' })) tags: string[],
+    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' }))
+    tags: string[],
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.historicalDataService.getProjectPipelineHistoricalData(tags, pipelineId, startDate, endDate);
+    return this.historicalDataService.getProjectPipelineHistoricalData(
+      tags,
+      pipelineId,
+      startDate,
+      endDate,
+    );
   }
 }

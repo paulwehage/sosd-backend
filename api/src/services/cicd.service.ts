@@ -31,7 +31,7 @@ export class CicdService {
       data: {
         ...createDto,
         tags: {
-          connectOrCreate: createDto.tags.map(tag => ({
+          connectOrCreate: createDto.tags.map((tag) => ({
             where: { name: tag },
             create: { name: tag },
           })),
@@ -43,7 +43,7 @@ export class CicdService {
     return {
       ...pipeline,
       totalCo2: 0,
-      tags: pipeline.tags.map(tag => tag.name),
+      tags: pipeline.tags.map((tag) => tag.name),
     };
   }
 
@@ -62,7 +62,7 @@ export class CicdService {
     return pipelines.map((pipeline) => ({
       ...pipeline,
       totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
-      tags: pipeline.tags.map(tag => tag.name),
+      tags: pipeline.tags.map((tag) => tag.name),
     }));
   }
 
@@ -86,7 +86,7 @@ export class CicdService {
     return {
       ...pipeline,
       totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
-      tags: pipeline.tags.map(tag => tag.name),
+      tags: pipeline.tags.map((tag) => tag.name),
     };
   }
 
@@ -208,7 +208,7 @@ export class CicdService {
 
   async getPipelinesByTags(
     tags: string[],
-    matchAll: boolean = false
+    matchAll: boolean = false,
   ): Promise<CicdPipelineDto[]> {
     console.log('Service Tags:', tags);
     console.log('Service MatchAll:', matchAll);
@@ -217,23 +217,23 @@ export class CicdService {
 
     if (matchAll) {
       whereCondition = {
-        AND: tags.map(tag => ({
+        AND: tags.map((tag) => ({
           tags: {
             some: {
-              name: tag
-            }
-          }
-        }))
+              name: tag,
+            },
+          },
+        })),
       };
     } else {
       whereCondition = {
         tags: {
           some: {
             name: {
-              in: tags
-            }
-          }
-        }
+              in: tags,
+            },
+          },
+        },
       };
     }
 
@@ -252,7 +252,14 @@ export class CicdService {
     });
 
     console.log('Found pipelines:', pipelines.length);
-    console.log('Found pipelines:', pipelines.map(p => ({ id: p.id, name: p.pipelineName, tags: p.tags.map(t => t.name) })));
+    console.log(
+      'Found pipelines:',
+      pipelines.map((p) => ({
+        id: p.id,
+        name: p.pipelineName,
+        tags: p.tags.map((t) => t.name),
+      })),
+    );
 
     return pipelines.map(this.mapToCicdPipelineDto.bind(this));
   }
@@ -274,7 +281,7 @@ export class CicdService {
       cloudProvider: pipeline.cloudProvider,
       pipelineName: pipeline.pipelineName,
       totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
-      tags: pipeline.tags.map(tag => tag.name),
+      tags: pipeline.tags.map((tag) => tag.name),
     };
   }
 

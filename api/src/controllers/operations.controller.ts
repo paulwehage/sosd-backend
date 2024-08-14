@@ -2,7 +2,9 @@ import {
   Body,
   Controller,
   Get,
-  Param, ParseArrayPipe, ParseBoolPipe,
+  Param,
+  ParseArrayPipe,
+  ParseBoolPipe,
   ParseIntPipe,
   Post,
   Query,
@@ -54,10 +56,15 @@ export class OperationsController {
   @ApiQuery({ name: 'tags', required: true, type: [String], isArray: true })
   @ApiQuery({ name: 'matchAll', required: false, type: Boolean })
   async getInfrastructureElementsByTags(
-    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' })) tags: string[],
-    @Query('matchAll', new ParseBoolPipe({ optional: true })) matchAll: boolean = false
+    @Query('tags', new ParseArrayPipe({ items: String, separator: ',' }))
+    tags: string[],
+    @Query('matchAll', new ParseBoolPipe({ optional: true }))
+    matchAll: boolean = false,
   ): Promise<InfrastructureElementDto[]> {
-    return await this.operationsService.getInfrastructureElementsByTags(tags, matchAll);
+    return await this.operationsService.getInfrastructureElementsByTags(
+      tags,
+      matchAll,
+    );
   }
 
   @Get('infrastructure-elements/:elementId')

@@ -3,44 +3,55 @@ import { PrismaService } from './prisma.service';
 
 @Injectable()
 export class HistoricalDataService {
-
   constructor(private prisma: PrismaService) {}
 
   async getCrossProjectHistoricalData(startDate: string, endDate: string) {
-
     const start = new Date(startDate);
     const end = new Date(endDate);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      throw new Error('Invalid date format. Please use ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)');
+      throw new Error(
+        'Invalid date format. Please use ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+      );
     }
 
     const projects = await this.prisma.project.findMany({
-      include: { tags: true }
+      include: { tags: true },
     });
 
     const result = [];
 
     for (const project of projects) {
-      const projectTags = project.tags.map(t => t.name);
+      const projectTags = project.tags.map((t) => t.name);
 
       const cicdData = await this.getCicdData(projectTags, start, end);
       const opsData = await this.getOperationsData(projectTags, start, end);
 
-      const projectData = this.aggregateProjectData(project, cicdData, opsData, start, end);
+      const projectData = this.aggregateProjectData(
+        project,
+        cicdData,
+        opsData,
+        start,
+        end,
+      );
       result.push(...projectData);
     }
 
     return result;
   }
 
-  async getProjectSdlcHistoricalData(tags: string[], startDate: string, endDate: string) {
-
+  async getProjectSdlcHistoricalData(
+    tags: string[],
+    startDate: string,
+    endDate: string,
+  ) {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      throw new Error('Invalid date format. Please use ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)');
+      throw new Error(
+        'Invalid date format. Please use ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+      );
     }
 
     const cicdData = await this.getCicdData(tags, start, end);
@@ -52,37 +63,47 @@ export class HistoricalDataService {
   private async getCicdData(tags: string[], startDate: Date, endDate: Date) {
     return this.prisma.cicdPipeline.findMany({
       where: {
-        tags: { some: { name: { in: tags } } }
+        tags: { some: { name: { in: tags } } },
       },
       include: {
         cicdPipelineRuns: {
           where: {
-            startTime: { gte: startDate, lte: endDate }
+            startTime: { gte: startDate, lte: endDate },
           },
           include: {
-            cicdPipelineStepMeasurements: true
-          }
-        }
-      }
+            cicdPipelineStepMeasurements: true,
+          },
+        },
+      },
     });
   }
 
-  private async getOperationsData(tags: string[], startDate: Date, endDate: Date) {
+  private async getOperationsData(
+    tags: string[],
+    startDate: Date,
+    endDate: Date,
+  ) {
     return this.prisma.operationsInfrastructureElement.findMany({
       where: {
-        tags: { some: { name: { in: tags } } }
+        tags: { some: { name: { in: tags } } },
       },
       include: {
         consumptions: {
           where: {
-            date: { gte: startDate, lte: endDate }
-          }
-        }
-      }
+            date: { gte: startDate, lte: endDate },
+          },
+        },
+      },
     });
   }
 
-  private aggregateProjectData(project, cicdData, opsData, startDate: Date, endDate: Date) {
+  private aggregateProjectData(
+    project,
+    cicdData,
+    opsData,
+    startDate: Date,
+    endDate: Date,
+  ) {
     const result = [];
     const currentDate = new Date(startDate);
 
@@ -96,7 +117,7 @@ export class HistoricalDataService {
         project_id: project.id,
         project_name: project.name,
         date: dateStr,
-        total_co2_consumption: cicdCo2 + opsCo2
+        total_co2_consumption: cicdCo2 + opsCo2,
       });
 
       currentDate.setDate(currentDate.getDate() + 1);
@@ -118,13 +139,13 @@ export class HistoricalDataService {
       result.push({
         date: dateStr,
         sdlc_step: 'integration_deployment',
-        total_co2_consumption: cicdCo2
+        total_co2_consumption: cicdCo2,
       });
 
       result.push({
         date: dateStr,
         sdlc_step: 'operations',
-        total_co2_consumption: opsCo2
+        total_co2_consumption: opsCo2,
       });
 
       currentDate.setDate(currentDate.getDate() + 1);
@@ -135,13 +156,20 @@ export class HistoricalDataService {
 
   private calculateDailyCicdCo2(cicdData, date: Date) {
     return cicdData.reduce((total, pipeline) => {
-      const dailyRuns = pipeline.cicdPipelineRuns.filter(run =>
-        new Date(run.startTime).toISOString().split('T')[0] === date.toISOString().split('T')[0]
+      const dailyRuns = pipeline.cicdPipelineRuns.filter(
+        (run) =>
+          new Date(run.startTime).toISOString().split('T')[0] ===
+          date.toISOString().split('T')[0],
       );
-      const dailyCo2 = dailyRuns.reduce((runTotal, run) =>
-          runTotal + run.cicdPipelineStepMeasurements.reduce((measurementTotal, measurement) =>
-            measurementTotal + measurement.co2Consumption, 0
-          ), 0
+      const dailyCo2 = dailyRuns.reduce(
+        (runTotal, run) =>
+          runTotal +
+          run.cicdPipelineStepMeasurements.reduce(
+            (measurementTotal, measurement) =>
+              measurementTotal + measurement.co2Consumption,
+            0,
+          ),
+        0,
       );
       return total + dailyCo2;
     }, 0);
@@ -149,20 +177,28 @@ export class HistoricalDataService {
 
   private calculateDailyOpsCo2(opsData, date: Date) {
     return opsData.reduce((total, element) => {
-      const dailyConsumption = element.consumptions.find(c =>
-        new Date(c.date).toISOString().split('T')[0] === date.toISOString().split('T')[0]
+      const dailyConsumption = element.consumptions.find(
+        (c) =>
+          new Date(c.date).toISOString().split('T')[0] ===
+          date.toISOString().split('T')[0],
       );
       return total + (dailyConsumption ? dailyConsumption.co2Consumption : 0);
     }, 0);
   }
 
-  async getProjectServiceHistoricalData(tags: string[], serviceId: string, startDate: string, endDate: string) {
-
+  async getProjectServiceHistoricalData(
+    tags: string[],
+    serviceId: string,
+    startDate: string,
+    endDate: string,
+  ) {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      throw new Error('Invalid date format. Please use ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)');
+      throw new Error(
+        'Invalid date format. Please use ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+      );
     }
 
     const serviceIdInt = parseInt(serviceId, 10);
@@ -179,17 +215,26 @@ export class HistoricalDataService {
     }
 
     const opsData = await this.getOperationsData(tags, start, end);
-    const filteredOpsData = opsData.filter(element => element.infrastructureServiceId === serviceIdInt);
+    const filteredOpsData = opsData.filter(
+      (element) => element.infrastructureServiceId === serviceIdInt,
+    );
 
     return this.aggregateServiceData(service, filteredOpsData, start, end);
   }
 
-  async getProjectPipelineHistoricalData(tags: string[], pipelineId: string, startDate: string, endDate: string) {
+  async getProjectPipelineHistoricalData(
+    tags: string[],
+    pipelineId: string,
+    startDate: string,
+    endDate: string,
+  ) {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      throw new Error('Invalid date format. Please use ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)');
+      throw new Error(
+        'Invalid date format. Please use ISO-8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
+      );
     }
 
     const pipelineIdInt = parseInt(pipelineId, 10);
@@ -202,13 +247,13 @@ export class HistoricalDataService {
       include: {
         cicdPipelineRuns: {
           where: {
-            startTime: { gte: start, lte: end }
+            startTime: { gte: start, lte: end },
           },
           include: {
-            cicdPipelineStepMeasurements: true
-          }
-        }
-      }
+            cicdPipelineStepMeasurements: true,
+          },
+        },
+      },
     });
 
     if (!pipeline) {
@@ -218,7 +263,12 @@ export class HistoricalDataService {
     return this.aggregatePipelineData(pipeline, start, end);
   }
 
-  private aggregateServiceData(service, opsData, startDate: Date, endDate: Date) {
+  private aggregateServiceData(
+    service,
+    opsData,
+    startDate: Date,
+    endDate: Date,
+  ) {
     const result = [];
     const currentDate = new Date(startDate);
 
@@ -231,7 +281,7 @@ export class HistoricalDataService {
         service_id: service.id,
         service_type: service.type,
         date: dateStr,
-        total_co2_consumption: co2
+        total_co2_consumption: co2,
       });
 
       currentDate.setDate(currentDate.getDate() + 1);
@@ -253,7 +303,7 @@ export class HistoricalDataService {
         pipeline_id: pipeline.id,
         pipeline_name: pipeline.pipelineName,
         date: dateStr,
-        total_co2_consumption: co2
+        total_co2_consumption: co2,
       });
 
       currentDate.setDate(currentDate.getDate() + 1);

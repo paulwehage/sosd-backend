@@ -151,26 +151,27 @@ export class OperationsService {
   async createInfrastructureElement(
     createDto: CreateInfrastructureElementDto,
   ): Promise<InfrastructureElementDto> {
-    const element = await this.prismaService.operationsInfrastructureElement.create({
-      data: {
-        name: createDto.name,
-        infrastructureServiceId: createDto.infrastructureServiceId,
-        tags: {
-          connectOrCreate: createDto.tags.map(tag => ({
-            where: { name: tag },
-            create: { name: tag },
-          })),
-        },
-      },
-      include: {
-        infrastructureService: {
-          include: {
-            cloudProvider: true,
+    const element =
+      await this.prismaService.operationsInfrastructureElement.create({
+        data: {
+          name: createDto.name,
+          infrastructureServiceId: createDto.infrastructureServiceId,
+          tags: {
+            connectOrCreate: createDto.tags.map((tag) => ({
+              where: { name: tag },
+              create: { name: tag },
+            })),
           },
         },
-        tags: true,
-      },
-    });
+        include: {
+          infrastructureService: {
+            include: {
+              cloudProvider: true,
+            },
+          },
+          tags: true,
+        },
+      });
 
     return this.mapToInfrastructureElementDto(element);
   }
@@ -178,29 +179,32 @@ export class OperationsService {
   async getInfrastructureElement(
     elementId: number,
   ): Promise<DetailedInfrastructureElementDto> {
-    const element = await this.prismaService.operationsInfrastructureElement.findUnique({
-      where: { id: elementId },
-      include: {
-        infrastructureService: {
-          include: {
-            cloudProvider: true,
+    const element =
+      await this.prismaService.operationsInfrastructureElement.findUnique({
+        where: { id: elementId },
+        include: {
+          infrastructureService: {
+            include: {
+              cloudProvider: true,
+            },
+          },
+          tags: true,
+          metricValues: {
+            include: {
+              metricDefinition: true,
+            },
+          },
+          consumptions: {
+            orderBy: { date: 'desc' },
+            take: 1,
           },
         },
-        tags: true,
-        metricValues: {
-          include: {
-            metricDefinition: true,
-          },
-        },
-        consumptions: {
-          orderBy: { date: 'desc' },
-          take: 1,
-        },
-      },
-    });
+      });
 
     if (!element) {
-      throw new NotFoundException(`Infrastructure element with ID ${elementId} not found`);
+      throw new NotFoundException(
+        `Infrastructure element with ID ${elementId} not found`,
+      );
     }
 
     return this.mapToDetailedInfrastructureElementDto(element);
@@ -239,53 +243,53 @@ export class OperationsService {
 
   async getInfrastructureElementsByTags(
     tags: string[],
-    matchAll: boolean = false
+    matchAll: boolean = false,
   ): Promise<InfrastructureElementDto[]> {
-
     let whereCondition;
 
     if (matchAll) {
       whereCondition = {
-        AND: tags.map(tag => ({
+        AND: tags.map((tag) => ({
           tags: {
             some: {
-              name: tag
-            }
-          }
-        }))
+              name: tag,
+            },
+          },
+        })),
       };
     } else {
       whereCondition = {
         tags: {
           some: {
             name: {
-              in: tags
-            }
-          }
-        }
+              in: tags,
+            },
+          },
+        },
       };
     }
 
-    const elements = await this.prismaService.operationsInfrastructureElement.findMany({
-      where: whereCondition,
-      include: {
-        infrastructureService: {
-          include: {
-            cloudProvider: true,
+    const elements =
+      await this.prismaService.operationsInfrastructureElement.findMany({
+        where: whereCondition,
+        include: {
+          infrastructureService: {
+            include: {
+              cloudProvider: true,
+            },
+          },
+          tags: true,
+          metricValues: {
+            include: {
+              metricDefinition: true,
+            },
+          },
+          consumptions: {
+            orderBy: { date: 'desc' },
+            take: 1,
           },
         },
-        tags: true,
-        metricValues: {
-          include: {
-            metricDefinition: true,
-          },
-        },
-        consumptions: {
-          orderBy: { date: 'desc' },
-          take: 1,
-        },
-      },
-    });
+      });
 
     return elements.map(this.mapToInfrastructureElementDto.bind(this));
   }
@@ -371,7 +375,7 @@ export class OperationsService {
       type: element.infrastructureService.type,
       category: element.infrastructureService.category,
       cloudProvider: element.infrastructureService.cloudProvider.name,
-      tags: element.tags.map((tag: { name: any; }) => tag.name),
+      tags: element.tags.map((tag: { name: any }) => tag.name),
       totalCo2: latestConsumption ? latestConsumption.co2Consumption : 0,
       keyMetrics,
     };
