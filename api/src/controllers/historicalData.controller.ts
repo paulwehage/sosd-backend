@@ -98,7 +98,7 @@ export class HistoricalDataController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.historicalDataService.getProjectSdlcHistoricalData(
+    return this.historicalDataService.getProjectOperationsHistoricalData(
       tags,
       startDate,
       endDate,
@@ -130,7 +130,7 @@ export class HistoricalDataController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ) {
-    return this.historicalDataService.getProjectSdlcHistoricalData(
+    return this.historicalDataService.getProjectCicdHistoricalData(
       tags,
       startDate,
       endDate,
