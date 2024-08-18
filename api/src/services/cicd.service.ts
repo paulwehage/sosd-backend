@@ -47,25 +47,6 @@ export class CicdService {
     };
   }
 
-  async getPipelines(): Promise<CicdPipelineDto[]> {
-    const pipelines = await this.prismaService.cicdPipeline.findMany({
-      include: {
-        tags: true,
-        cicdPipelineRuns: {
-          include: {
-            cicdPipelineStepMeasurements: true,
-          },
-        },
-      },
-    });
-
-    return pipelines.map((pipeline) => ({
-      ...pipeline,
-      totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
-      tags: pipeline.tags.map((tag) => tag.name),
-    }));
-  }
-
   async getPipeline(pipelineId: number): Promise<CicdPipelineDto> {
     const pipeline = await this.prismaService.cicdPipeline.findUnique({
       where: { id: pipelineId },
@@ -210,9 +191,6 @@ export class CicdService {
     tags: string[],
     matchAll: boolean = false,
   ): Promise<CicdPipelineDto[]> {
-    console.log('Service Tags:', tags);
-    console.log('Service MatchAll:', matchAll);
-
     let whereCondition;
 
     if (matchAll) {
@@ -237,8 +215,6 @@ export class CicdService {
       };
     }
 
-    console.log('Where condition:', JSON.stringify(whereCondition, null, 2));
-
     const pipelines = await this.prismaService.cicdPipeline.findMany({
       where: whereCondition,
       include: {
@@ -247,33 +223,24 @@ export class CicdService {
           include: {
             cicdPipelineStepMeasurements: true,
           },
+          orderBy: {
+            startTime: 'desc',
+          },
         },
       },
     });
 
-    console.log('Found pipelines:', pipelines.length);
-    console.log(
-      'Found pipelines:',
-      pipelines.map((p) => ({
-        id: p.id,
-        name: p.pipelineName,
-        tags: p.tags.map((t) => t.name),
-      })),
+    return Promise.all(pipelines.map(this.mapToCicdPipelineDto.bind(this)));
+  }
+
+  private async mapToCicdPipelineDto(pipeline: any): Promise<CicdPipelineDto> {
+    const weeklyCo2Consumption = await this.calculateWeeklyCo2Consumption(
+      pipeline.id,
     );
+    const lastRun = pipeline.cicdPipelineRuns[0]; // Assuming runs are ordered by startTime desc
+    const [integrationConsumption, deploymentConsumption] =
+      this.calculateLastRunConsumption(lastRun);
 
-    return pipelines.map(this.mapToCicdPipelineDto.bind(this));
-  }
-
-  private safeJsonParse(jsonString: string, defaultValue: any = null) {
-    try {
-      return JSON.parse(jsonString);
-    } catch (error) {
-      console.warn(`Failed to parse JSON: ${jsonString}. Using default value.`);
-      return defaultValue;
-    }
-  }
-
-  private mapToCicdPipelineDto(pipeline: any): CicdPipelineDto {
     return {
       id: pipeline.id,
       repoName: pipeline.repoName,
@@ -282,7 +249,52 @@ export class CicdService {
       pipelineName: pipeline.pipelineName,
       totalCo2: this.calculateTotalCo2ForPipeline(pipeline),
       tags: pipeline.tags.map((tag) => tag.name),
+      keyMetrics: {
+        weekly_co2_consumption: weeklyCo2Consumption,
+        integration_consumption_last_run: integrationConsumption,
+        deployment_consumption_last_run: deploymentConsumption,
+      },
     };
+  }
+
+  private async calculateWeeklyCo2Consumption(
+    pipelineId: number,
+  ): Promise<number> {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const recentRuns = await this.prismaService.cicdPipelineRun.findMany({
+      where: {
+        cicdPipelineId: pipelineId,
+        startTime: {
+          gte: oneWeekAgo,
+        },
+      },
+      include: {
+        cicdPipelineStepMeasurements: true,
+      },
+    });
+
+    return recentRuns.reduce(
+      (total, run) => total + this.calculateTotalCo2ForRun(run),
+      0,
+    );
+  }
+
+  private calculateLastRunConsumption(lastRun: any): [number, number] {
+    if (!lastRun) return [0, 0];
+
+    const integrationConsumption = lastRun.cicdPipelineStepMeasurements
+      .filter(
+        (measurement) => measurement.stepName === CicdStepName.integration,
+      )
+      .reduce((total, measurement) => total + measurement.co2Consumption, 0);
+
+    const deploymentConsumption = lastRun.cicdPipelineStepMeasurements
+      .filter((measurement) => measurement.stepName === CicdStepName.deployment)
+      .reduce((total, measurement) => total + measurement.co2Consumption, 0);
+
+    return [integrationConsumption, deploymentConsumption];
   }
 
   private calculateTotalCo2ForPipeline(pipeline: any): number {

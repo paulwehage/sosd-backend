@@ -7,12 +7,31 @@ import {
   IsDate,
   IsOptional,
   IsArray,
+  ValidateNested,
 } from 'class-validator';
 import {
   CicdStepName,
   DeploymentSubStepName,
   IntegrationSubStepName,
 } from '@prisma/client';
+import { Type } from 'class-transformer';
+
+export class KeyMetricsDto {
+  @ApiProperty({ description: 'Weekly CO2 consumption of the pipeline' })
+  @IsNumber()
+  @IsNotEmpty()
+  weekly_co2_consumption: number;
+
+  @ApiProperty({ description: 'Integration consumption of the last run' })
+  @IsNumber()
+  @IsNotEmpty()
+  integration_consumption_last_run: number;
+
+  @ApiProperty({ description: 'Deployment consumption of the last run' })
+  @IsNumber()
+  @IsNotEmpty()
+  deployment_consumption_last_run: number;
+}
 
 export class CicdPipelineDto {
   @ApiProperty({ description: 'Unique identifier of the CICD pipeline' })
@@ -35,6 +54,11 @@ export class CicdPipelineDto {
 
   @ApiProperty({ description: 'Tags for the CI/CD pipeline' })
   tags: string[];
+
+  @ApiProperty({ description: 'Key metrics for the pipeline' })
+  @ValidateNested()
+  @Type(() => KeyMetricsDto)
+  keyMetrics?: KeyMetricsDto;
 }
 
 export class CreateCicdPipelineDto {

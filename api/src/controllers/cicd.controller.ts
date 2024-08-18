@@ -59,8 +59,6 @@ export class CicdController {
     @Query('matchAll', new ParseBoolPipe({ optional: true }))
     matchAll: boolean = false,
   ): Promise<CicdPipelineDto[]> {
-    console.log('Controller Tags:', tags);
-    console.log('Controller MatchAll:', matchAll);
     return await this.cicdService.getPipelinesByTags(tags, matchAll);
   }
 

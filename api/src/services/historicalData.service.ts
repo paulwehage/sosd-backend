@@ -68,6 +68,20 @@ export class HistoricalDataService {
     return this.aggregateOperationsData(operationsData, start, end);
   }
 
+  async getProjectCicdHistoricalData(
+    tags: string[],
+    startDate: string,
+    endDate: string,
+  ) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    this.validateDates(start, end);
+
+    const cicdData = await this.getCicdData(tags, start, end);
+    return this.aggregateCicdDataByPipeline(cicdData, start, end);
+  }
+
   async getProjectServiceHistoricalData(
     tags: string[],
     serviceId: string,
@@ -96,22 +110,8 @@ export class HistoricalDataService {
     return this.aggregateServiceData(service, filteredOpsData, start, end);
   }
 
-  async getProjectCicdHistoricalData(
-    tags: string[],
-    startDate: string,
-    endDate: string,
-  ) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    this.validateDates(start, end);
-
-    const cicdData = await this.getCicdData(tags, start, end);
-    return this.aggregateCicdData(cicdData, start, end);
-  }
-
   async getProjectPipelineHistoricalData(
-    _tags: string[],
+    tags: string[],
     pipelineId: string,
     startDate: string,
     endDate: string,
@@ -145,6 +145,7 @@ export class HistoricalDataService {
 
   // Private Methods
 
+  // Validation Methods
   private validateDates(startDate: Date, endDate: Date) {
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       throw new Error(
@@ -169,6 +170,7 @@ export class HistoricalDataService {
     return pipelineIdInt;
   }
 
+  // Data Fetching Methods
   private async getCicdData(tags: string[], startDate: Date, endDate: Date) {
     return this.prisma.cicdPipeline.findMany({
       where: {
@@ -219,44 +221,7 @@ export class HistoricalDataService {
     }
   }
 
-  private aggregateOperationsData(
-    operationsData,
-    startDate: Date,
-    endDate: Date,
-  ) {
-    const result = [];
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-
-      for (const element of operationsData) {
-        if (!element.consumptions || !Array.isArray(element.consumptions)) {
-          console.warn(`No consumptions found for element: ${element.id}`);
-          continue;
-        }
-
-        const dailyConsumption = element.consumptions.find(
-          (c) => new Date(c.date).toISOString().split('T')[0] === dateStr,
-        );
-
-        if (dailyConsumption) {
-          result.push({
-            date: dateStr,
-            infrastructure_element_name: element.name,
-            service_name: element.infrastructureService.type,
-            cloud_provider: element.infrastructureService.cloudProvider.name,
-            total_co2_consumption: dailyConsumption.co2Consumption,
-          });
-        }
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return result;
-  }
-
+  // Aggregation Methods
   private aggregateProjectData(
     project,
     cicdData,
@@ -314,6 +279,75 @@ export class HistoricalDataService {
     return result;
   }
 
+  private aggregateOperationsData(
+    operationsData,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    const result = [];
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+
+      for (const element of operationsData) {
+        if (!element.consumptions || !Array.isArray(element.consumptions)) {
+          console.warn(`No consumptions found for element: ${element.id}`);
+          continue;
+        }
+
+        const dailyConsumption = element.consumptions.find(
+          (c) => new Date(c.date).toISOString().split('T')[0] === dateStr,
+        );
+
+        if (dailyConsumption) {
+          result.push({
+            date: dateStr,
+            infrastructure_element_name: element.name,
+            service_name: element.infrastructureService.type,
+            cloud_provider: element.infrastructureService.cloudProvider.name,
+            total_co2_consumption: dailyConsumption.co2Consumption,
+          });
+        }
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return result;
+  }
+
+  private aggregateCicdDataByPipeline(
+    cicdData,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    const result = [];
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+
+      for (const pipeline of cicdData) {
+        const dailyCo2 = this.calculateDailyCicdCo2ForPipeline(
+          pipeline,
+          currentDate,
+        );
+
+        result.push({
+          date: dateStr,
+          pipelineName: pipeline.pipelineName,
+          cloudProvider: pipeline.cloudProvider,
+          total_co2_consumption: dailyCo2,
+        });
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return result;
+  }
+
   private aggregateServiceData(
     service,
     opsData,
@@ -348,7 +382,7 @@ export class HistoricalDataService {
     while (currentDate <= endDate) {
       const dateStr = currentDate.toISOString().split('T')[0];
 
-      const co2 = this.calculateDailyCicdCo2([pipeline], currentDate);
+      const co2 = this.calculateDailyCicdCo2ForPipeline(pipeline, currentDate);
 
       result.push({
         pipeline_id: pipeline.id,
@@ -363,46 +397,30 @@ export class HistoricalDataService {
     return result;
   }
 
-  private aggregateCicdData(cicdData, startDate: Date, endDate: Date) {
-    const result = [];
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-
-      const cicdCo2 = this.calculateDailyCicdCo2(cicdData, currentDate);
-
-      result.push({
-        date: dateStr,
-        sdlc_step: 'integration_deployment',
-        total_co2_consumption: cicdCo2,
-      });
-
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return result;
-  }
-
+  // Calculation Methods
   private calculateDailyCicdCo2(cicdData, date: Date) {
     return cicdData.reduce((total, pipeline) => {
-      const dailyRuns = pipeline.cicdPipelineRuns.filter(
-        (run) =>
-          new Date(run.startTime).toISOString().split('T')[0] ===
-          date.toISOString().split('T')[0],
-      );
-      const dailyCo2 = dailyRuns.reduce(
-        (runTotal, run) =>
-          runTotal +
-          run.cicdPipelineStepMeasurements.reduce(
-            (measurementTotal, measurement) =>
-              measurementTotal + measurement.co2Consumption,
-            0,
-          ),
-        0,
-      );
-      return total + dailyCo2;
+      return total + this.calculateDailyCicdCo2ForPipeline(pipeline, date);
     }, 0);
+  }
+
+  private calculateDailyCicdCo2ForPipeline(pipeline, date: Date) {
+    const dailyRuns = pipeline.cicdPipelineRuns.filter(
+      (run) =>
+        new Date(run.startTime).toISOString().split('T')[0] ===
+        date.toISOString().split('T')[0],
+    );
+
+    return dailyRuns.reduce(
+      (runTotal, run) =>
+        runTotal +
+        run.cicdPipelineStepMeasurements.reduce(
+          (measurementTotal, measurement) =>
+            measurementTotal + measurement.co2Consumption,
+          0,
+        ),
+      0,
+    );
   }
 
   private calculateDailyOpsCo2(opsData, date: Date) {
