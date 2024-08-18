@@ -16,7 +16,8 @@
               "type": "integer",
               "isKey": true,
               "baseValue": 1429,
-              "growth": 29
+              "growth": 29,
+              "variance": 0.1
             },
             {
               "name": "Daily Duration",
@@ -24,7 +25,8 @@
               "isKey": true,
               "baseValue": 7143,
               "growth": 143,
-              "unit": "ms"
+              "unit": "ms",
+              "variance": 0.05
             },
             {
               "name": "Daily CO2 Consumption",
@@ -32,7 +34,8 @@
               "isKey": false,
               "baseValue": 71.43,
               "growth": 1.43,
-              "unit": "g CO2"
+              "unit": "g CO2",
+              "variance": 0.15
             },
             {
               "name": "SCI per Call",
@@ -64,7 +67,8 @@
               "isKey": false,
               "baseValue": 800,
               "growth": 10,
-              "unit": "ms"
+              "unit": "ms",
+              "variance": 0.08
             }
           ]
         },
@@ -80,21 +84,24 @@
               "isKey": true,
               "baseValue": 14.29,
               "growth": 0.29,
-              "unit": "GB"
+              "unit": "GB",
+              "variance": 0.05
             },
             {
               "name": "Daily Reads",
               "type": "integer",
               "isKey": true,
               "baseValue": 142857,
-              "growth": 2857
+              "growth": 2857,
+              "variance": 0.12
             },
             {
               "name": "Daily Writes",
               "type": "integer",
               "isKey": false,
               "baseValue": 7143,
-              "growth": 143
+              "growth": 143,
+              "variance": 0.08
             },
             {
               "name": "Daily CO2 Consumption",
@@ -102,7 +109,8 @@
               "isKey": false,
               "baseValue": 285.71,
               "growth": 5.71,
-              "unit": "g CO2"
+              "unit": "g CO2",
+              "variance": 0.1
             },
             {
               "name": "SCI per Call",
@@ -118,7 +126,8 @@
               "isKey": false,
               "baseValue": 2,
               "growth": 0.1,
-              "unit": "KB"
+              "unit": "KB",
+              "variance": 0.03
             }
           ]
         },
@@ -134,14 +143,16 @@
               "isKey": true,
               "baseValue": 71.43,
               "growth": 1.43,
-              "unit": "GB"
+              "unit": "GB",
+              "variance": 0.07
             },
             {
               "name": "Daily Requests",
               "type": "integer",
               "isKey": true,
               "baseValue": 142857,
-              "growth": 7143
+              "growth": 7143,
+              "variance": 0.15
             },
             {
               "name": "Daily CO2 Consumption",
@@ -149,7 +160,8 @@
               "isKey": false,
               "baseValue": 214.29,
               "growth": 4.29,
-              "unit": "g CO2"
+              "unit": "g CO2",
+              "variance": 0.12
             },
             {
               "name": "SCI per Request",
@@ -165,7 +177,8 @@
               "isKey": false,
               "baseValue": 500,
               "growth": 10,
-              "unit": "KB"
+              "unit": "KB",
+              "variance": 0.05
             }
           ]
         },
@@ -181,7 +194,8 @@
               "isKey": true,
               "baseValue": 1428.57,
               "growth": 28.57,
-              "unit": "CPU-hours"
+              "unit": "CPU-hours",
+              "variance": 0.1
             },
             {
               "name": "Daily Network In",
@@ -189,7 +203,8 @@
               "isKey": true,
               "baseValue": 71.43,
               "growth": 1.43,
-              "unit": "GB"
+              "unit": "GB",
+              "variance": 0.08
             },
             {
               "name": "Daily Network Out",
@@ -197,7 +212,8 @@
               "isKey": false,
               "baseValue": 285.71,
               "growth": 5.71,
-              "unit": "GB"
+              "unit": "GB",
+              "variance": 0.09
             },
             {
               "name": "Daily CO2 Consumption",
@@ -205,7 +221,8 @@
               "isKey": false,
               "baseValue": 714.29,
               "growth": 14.29,
-              "unit": "g CO2"
+              "unit": "g CO2",
+              "variance": 0.11
             },
             {
               "name": "Daily RAM Usage",
@@ -213,7 +230,8 @@
               "isKey": false,
               "baseValue": 64,
               "growth": 1,
-              "unit": "GB"
+              "unit": "GB",
+              "variance": 0.06
             },
             {
               "name": "Daily PVC",
@@ -221,7 +239,8 @@
               "isKey": false,
               "baseValue": 71.43,
               "growth": 1.43,
-              "unit": "GB"
+              "unit": "GB",
+              "variance": 0.04
             }
           ]
         }
@@ -236,7 +255,130 @@
           "baseRunTime": 1800,
           "runTimeGrowth": 60,
           "baseCO2": 80,
-          "co2Growth": 2
+          "co2Growth": 2,
+          "steps": [
+            {
+              "name": "Source",
+              "type": "integration",
+              "subType": "source",
+              "baseTime": 60,
+              "timeGrowth": 2,
+              "baseCO2": 2,
+              "co2Growth": 0.05
+            },
+            {
+              "name": "Install Dependencies",
+              "type": "integration",
+              "subType": "install",
+              "baseTime": 300,
+              "timeGrowth": 10,
+              "baseCO2": 15,
+              "co2Growth": 0.5
+            },
+            {
+              "name": "Build",
+              "type": "integration",
+              "subType": "build",
+              "baseTime": 600,
+              "timeGrowth": 20,
+              "baseCO2": 30,
+              "co2Growth": 1
+            },
+            {
+              "name": "Unit Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 300,
+              "timeGrowth": 10,
+              "baseCO2": 10,
+              "co2Growth": 0.3
+            },
+            {
+              "name": "Deploy to Dev",
+              "type": "deployment",
+              "subType": "dev",
+              "baseTime": 180,
+              "timeGrowth": 6,
+              "baseCO2": 8,
+              "co2Growth": 0.2
+            },
+            {
+              "name": "Integration Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 240,
+              "timeGrowth": 8,
+              "baseCO2": 10,
+              "co2Growth": 0.3
+            },
+            {
+              "name": "Deploy to Staging",
+              "type": "deployment",
+              "subType": "staging",
+              "baseTime": 240,
+              "timeGrowth": 8,
+              "baseCO2": 10,
+              "co2Growth": 0.3
+            },
+            {
+              "name": "Deploy to Production",
+              "type": "deployment",
+              "subType": "prod",
+              "baseTime": 300,
+              "timeGrowth": 10,
+              "baseCO2": 15,
+              "co2Growth": 0.5
+            }
+          ]
+        },
+        {
+          "name": "Nightly Tests",
+          "repoName": "e-commerce-tests",
+          "branch": "main",
+          "tags": ["projectA"],
+          "cloudProvider": "AWS",
+          "baseRunTime": 3600,
+          "runTimeGrowth": 120,
+          "baseCO2": 160,
+          "co2Growth": 4,
+          "steps": [
+            {
+              "name": "Source",
+              "type": "integration",
+              "subType": "source",
+              "baseTime": 60,
+              "timeGrowth": 2,
+              "baseCO2": 2,
+              "co2Growth": 0.05
+            },
+            {
+              "name": "Install Dependencies",
+              "type": "integration",
+              "subType": "install",
+              "baseTime": 300,
+              "timeGrowth": 10,
+              "baseCO2": 15,
+              "co2Growth": 0.5
+            },
+            {
+              "name": "Run All Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 3000,
+              "timeGrowth": 100,
+              "baseCO2": 135,
+              "co2Growth": 3.5
+            },
+            {
+              "name": "Generate Report",
+              "type": "integration",
+              "subType": "report",
+              "baseTime": 240,
+              "timeGrowth": 8,
+              "baseCO2": 8,
+              "co2Growth": 0.2
+            }
+          ]
         }
       ],
       "userFlows": [
@@ -268,7 +410,8 @@
               "type": "integer",
               "isKey": true,
               "baseValue": 714286,
-              "growth": 14286
+              "growth": 14286,
+              "variance": 0.12
             },
             {
               "name": "Daily CPU Time",
@@ -276,7 +419,8 @@
               "isKey": true,
               "baseValue": 142.86,
               "growth": 2.86,
-              "unit": "CPU-hours"
+              "unit": "CPU-hours",
+              "variance": 0.08
             },
             {
               "name": "Daily CO2 Consumption",
@@ -284,7 +428,8 @@
               "isKey": false,
               "baseValue": 428.57,
               "growth": 8.57,
-              "unit": "g CO2"
+              "unit": "g CO2",
+              "variance": 0.1
             },
             {
               "name": "Average Response Time",
@@ -292,7 +437,8 @@
               "isKey": false,
               "baseValue": 200,
               "growth": 1,
-              "unit": "ms"
+              "unit": "ms",
+              "variance": 0.15
             },
             {
               "name": "SCI per Request",
@@ -308,7 +454,8 @@
               "isKey": false,
               "baseValue": 16,
               "growth": 0.5,
-              "unit": "GB"
+              "unit": "GB",
+              "variance": 0.06
             }
           ]
         },
@@ -324,14 +471,16 @@
               "isKey": true,
               "baseValue": 7.14,
               "growth": 0.14,
-              "unit": "GB"
+              "unit": "GB",
+              "variance": 0.05
             },
             {
               "name": "Daily Requests",
               "type": "integer",
               "isKey": true,
               "baseValue": 285714,
-              "growth": 5714
+              "growth": 5714,
+              "variance": 0.1
             },
             {
               "name": "Daily CO2 Consumption",
@@ -339,7 +488,8 @@
               "isKey": false,
               "baseValue": 257.14,
               "growth": 5.14,
-              "unit": "g CO2"
+              "unit": "g CO2",
+              "variance": 0.12
             },
             {
               "name": "SCI per Request",
@@ -355,7 +505,8 @@
               "isKey": false,
               "baseValue": 5,
               "growth": 0.1,
-              "unit": "KB"
+              "unit": "KB",
+              "variance": 0.03
             },
             {
               "name": "Provisioned Throughput",
@@ -363,7 +514,8 @@
               "isKey": false,
               "baseValue": 400,
               "growth": 10,
-              "unit": "RU/s"
+              "unit": "RU/s",
+              "variance": 0.08
             }
           ]
         }
@@ -378,7 +530,139 @@
           "baseRunTime": 1200,
           "runTimeGrowth": 30,
           "baseCO2": 60,
-          "co2Growth": 1.5
+          "co2Growth": 1.5,
+          "steps": [
+            {
+              "name": "Source",
+              "type": "integration",
+              "subType": "source",
+              "baseTime": 30,
+              "timeGrowth": 1,
+              "baseCO2": 1,
+              "co2Growth": 0.025
+            },
+            {
+              "name": "Install Dependencies",
+              "type": "integration",
+              "subType": "install",
+              "baseTime": 180,
+              "timeGrowth": 6,
+              "baseCO2": 9,
+              "co2Growth": 0.3
+            },
+            {
+              "name": "Build",
+              "type": "integration",
+              "subType": "build",
+              "baseTime": 300,
+              "timeGrowth": 10,
+              "baseCO2": 15,
+              "co2Growth": 0.5
+            },
+            {
+              "name": "Unit Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 240,
+              "timeGrowth": 8,
+              "baseCO2": 12,
+              "co2Growth": 0.4
+            },
+            {
+              "name": "Deploy to Dev",
+              "type": "deployment",
+              "subType": "dev",
+              "baseTime": 120,
+              "timeGrowth": 4,
+              "baseCO2": 6,
+              "co2Growth": 0.2
+            },
+            {
+              "name": "Integration Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 180,
+              "timeGrowth": 6,
+              "baseCO2": 9,
+              "co2Growth": 0.3
+            },
+            {
+              "name": "Deploy to Staging",
+              "type": "deployment",
+              "subType": "staging",
+              "baseTime": 150,
+              "timeGrowth": 5,
+              "baseCO2": 7.5,
+              "co2Growth": 0.25
+            }
+          ]
+        },
+        {
+          "name": "Mobile App Build",
+          "repoName": "mobile-app",
+          "branch": "main",
+          "cloudProvider": "Azure",
+          "tags": ["projectB"],
+          "baseRunTime": 2400,
+          "runTimeGrowth": 60,
+          "baseCO2": 120,
+          "co2Growth": 3,
+          "steps": [
+            {
+              "name": "Source",
+              "type": "integration",
+              "subType": "source",
+              "baseTime": 30,
+              "timeGrowth": 1,
+              "baseCO2": 1,
+              "co2Growth": 0.025
+            },
+            {
+              "name": "Install Dependencies",
+              "type": "integration",
+              "subType": "install",
+              "baseTime": 360,
+              "timeGrowth": 12,
+              "baseCO2": 18,
+              "co2Growth": 0.6
+            },
+            {
+              "name": "Build iOS",
+              "type": "integration",
+              "subType": "build",
+              "baseTime": 600,
+              "timeGrowth": 20,
+              "baseCO2": 30,
+              "co2Growth": 1
+            },
+            {
+              "name": "Build Android",
+              "type": "integration",
+              "subType": "build",
+              "baseTime": 660,
+              "timeGrowth": 22,
+              "baseCO2": 33,
+              "co2Growth": 1.1
+            },
+            {
+              "name": "Unit Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 300,
+              "timeGrowth": 10,
+              "baseCO2": 15,
+              "co2Growth": 0.5
+            },
+            {
+              "name": "UI Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 450,
+              "timeGrowth": 15,
+              "baseCO2": 22.5,
+              "co2Growth": 0.75
+            }
+          ]
         }
       ],
       "userFlows": [
@@ -393,6 +677,471 @@
           "co2Growth": 0.4
         }
       ]
+    },
+    {
+      "name": "Data Analytics Platform",
+      "description": "Big data analytics and visualization platform",
+      "tags": ["projectC"],
+      "infrastructureElements": [
+        {
+          "name": "DataProcessingCluster",
+          "service": "EMR",
+          "cloudProvider": "AWS",
+          "tags": ["projectC"],
+          "metrics": [
+            {
+              "name": "Daily Cluster Uptime",
+              "type": "decimal",
+              "isKey": true,
+              "baseValue": 20,
+              "growth": 0.5,
+              "unit": "hours",
+              "variance": 0.15
+            },
+            {
+              "name": "Daily Data Processed",
+              "type": "decimal",
+              "isKey": true,
+              "baseValue": 500,
+              "growth": 25,
+              "unit": "GB",
+              "variance": 0.2
+            },
+            {
+              "name": "Daily CO2 Consumption",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 1000,
+              "growth": 50,
+              "unit": "g CO2",
+              "variance": 0.18
+            },
+            {
+              "name": "Average Job Duration",
+              "type": "integer",
+              "isKey": false,
+              "baseValue": 1800,
+              "growth": 30,
+              "unit": "seconds",
+              "variance": 0.25
+            },
+            {
+              "name": "SCI per GB Processed",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 2,
+              "growth": 0,
+              "unit": "g CO2"
+            }
+          ]
+        },
+        {
+          "name": "VisualizationService",
+          "service": "EC2",
+          "cloudProvider": "AWS",
+          "tags": ["projectC"],
+          "metrics": [
+            {
+              "name": "Daily Active Users",
+              "type": "integer",
+              "isKey": true,
+              "baseValue": 1000,
+              "growth": 50,
+              "variance": 0.1
+            },
+            {
+              "name": "Daily CPU Utilization",
+              "type": "decimal",
+              "isKey": true,
+              "baseValue": 60,
+              "growth": 1,
+              "unit": "%",
+              "variance": 0.08
+            },
+            {
+              "name": "Daily CO2 Consumption",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 500,
+              "growth": 25,
+              "unit": "g CO2",
+              "variance": 0.12
+            },
+            {
+              "name": "Average Response Time",
+              "type": "integer",
+              "isKey": false,
+              "baseValue": 300,
+              "growth": 5,
+              "unit": "ms",
+              "variance": 0.15
+            },
+            {
+              "name": "SCI per User Session",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 0.5,
+              "growth": 0,
+              "unit": "g CO2"
+            }
+          ]
+        }
+      ],
+      "cicdPipelines": [
+        {
+          "name": "Analytics Pipeline",
+          "repoName": "data-analytics",
+          "branch": "main",
+          "cloudProvider": "AWS",
+          "tags": ["projectC"],
+          "baseRunTime": 3600,
+          "runTimeGrowth": 120,
+          "baseCO2": 180,
+          "co2Growth": 6,
+          "steps": [
+            {
+              "name": "Source",
+              "type": "integration",
+              "subType": "source",
+              "baseTime": 60,
+              "timeGrowth": 2,
+              "baseCO2": 3,
+              "co2Growth": 0.1
+            },
+            {
+              "name": "Install Dependencies",
+              "type": "integration",
+              "subType": "install",
+              "baseTime": 420,
+              "timeGrowth": 14,
+              "baseCO2": 21,
+              "co2Growth": 0.7
+            },
+            {
+              "name": "Build",
+              "type": "integration",
+              "subType": "build",
+              "baseTime": 900,
+              "timeGrowth": 30,
+              "baseCO2": 45,
+              "co2Growth": 1.5
+            },
+            {
+              "name": "Unit Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 600,
+              "timeGrowth": 20,
+              "baseCO2": 30,
+              "co2Growth": 1
+            },
+            {
+              "name": "Integration Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 900,
+              "timeGrowth": 30,
+              "baseCO2": 45,
+              "co2Growth": 1.5
+            },
+            {
+              "name": "Deploy to Dev",
+              "type": "deployment",
+              "subType": "dev",
+              "baseTime": 300,
+              "timeGrowth": 10,
+              "baseCO2": 15,
+              "co2Growth": 0.5
+            },
+            {
+              "name": "Performance Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 1200,
+              "timeGrowth": 40,
+              "baseCO2": 60,
+              "co2Growth": 2
+            },
+            {
+              "name": "Deploy to Staging",
+              "type": "deployment",
+              "subType": "staging",
+              "baseTime": 360,
+              "timeGrowth": 12,
+              "baseCO2": 18,
+              "co2Growth": 0.6
+            }
+          ]
+        }
+      ],
+      "userFlows": [
+        {
+          "name": "Data Import",
+          "baseCO2Consumption": 100.0,
+          "co2Growth": 1.0
+        },
+        {
+          "name": "Dashboard Generation",
+          "baseCO2Consumption": 80.0,
+          "co2Growth": 0.8
+        }
+      ]
+    },
+    {
+      "name": "IoT Device Management",
+      "description": "Platform for managing and analyzing IoT devices",
+      "tags": ["projectD"],
+      "infrastructureElements": [
+        {
+          "name": "DeviceRegistry",
+          "service": "IoT Core",
+          "cloudProvider": "AWS",
+          "tags": ["projectD"],
+          "metrics": [
+            {
+              "name": "Daily Connected Devices",
+              "type": "integer",
+              "isKey": true,
+              "baseValue": 100000,
+              "growth": 5000,
+              "variance": 0.1
+            },
+            {
+              "name": "Daily Messages Processed",
+              "type": "integer",
+              "isKey": true,
+              "baseValue": 10000000,
+              "growth": 500000,
+              "variance": 0.15
+            },
+            {
+              "name": "Daily CO2 Consumption",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 2000,
+              "growth": 100,
+              "unit": "g CO2",
+              "variance": 0.12
+            },
+            {
+              "name": "Average Message Size",
+              "type": "integer",
+              "isKey": false,
+              "baseValue": 1024,
+              "growth": 10,
+              "unit": "bytes",
+              "variance": 0.05
+            },
+            {
+              "name": "SCI per Message",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 0.0002,
+              "growth": 0,
+              "unit": "g CO2"
+            }
+          ]
+        },
+        {
+          "name": "DataLake",
+          "service": "S3",
+          "cloudProvider": "AWS",
+          "tags": ["projectD"],
+          "metrics": [
+            {
+              "name": "Daily Storage Size",
+              "type": "decimal",
+              "isKey": true,
+              "baseValue": 1000,
+              "growth": 50,
+              "unit": "GB",
+              "variance": 0.08
+            },
+            {
+              "name": "Daily Data Ingestion",
+              "type": "decimal",
+              "isKey": true,
+              "baseValue": 100,
+              "growth": 5,
+              "unit": "GB",
+              "variance": 0.1
+            },
+            {
+              "name": "Daily CO2 Consumption",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 500,
+              "growth": 25,
+              "unit": "g CO2",
+              "variance": 0.12
+            },
+            {
+              "name": "Daily Read Requests",
+              "type": "integer",
+              "isKey": false,
+              "baseValue": 1000000,
+              "growth": 50000,
+              "variance": 0.2
+            },
+            {
+              "name": "SCI per GB Stored",
+              "type": "decimal",
+              "isKey": false,
+              "baseValue": 0.5,
+              "growth": 0,
+              "unit": "g CO2"
+            }
+          ]
+        }
+      ],
+      "cicdPipelines": [
+        {
+          "name": "IoT Platform Pipeline",
+          "repoName": "iot-platform",
+          "branch": "main",
+          "cloudProvider": "AWS",
+          "tags": ["projectD"],
+          "baseRunTime": 2700,
+          "runTimeGrowth": 90,
+          "baseCO2": 135,
+          "co2Growth": 4.5,
+          "steps": [
+            {
+              "name": "Source",
+              "type": "integration",
+              "subType": "source",
+              "baseTime": 45,
+              "timeGrowth": 1.5,
+              "baseCO2": 2.25,
+              "co2Growth": 0.075
+            },
+            {
+              "name": "Install Dependencies",
+              "type": "integration",
+              "subType": "install",
+              "baseTime": 360,
+              "timeGrowth": 12,
+              "baseCO2": 18,
+              "co2Growth": 0.6
+            },
+            {
+              "name": "Build",
+              "type": "integration",
+              "subType": "build",
+              "baseTime": 720,
+              "timeGrowth": 24,
+              "baseCO2": 36,
+              "co2Growth": 1.2
+            },
+            {
+              "name": "Unit Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 540,
+              "timeGrowth": 18,
+              "baseCO2": 27,
+              "co2Growth": 0.9
+            },
+            {
+              "name": "Deploy to Dev",
+              "type": "deployment",
+              "subType": "dev",
+              "baseTime": 240,
+              "timeGrowth": 8,
+              "baseCO2": 12,
+              "co2Growth": 0.4
+            },
+            {
+              "name": "Integration Tests",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 480,
+              "timeGrowth": 16,
+              "baseCO2": 24,
+              "co2Growth": 0.8
+            },
+            {
+              "name": "Deploy to Staging",
+              "type": "deployment",
+              "subType": "staging",
+              "baseTime": 315,
+              "timeGrowth": 10.5,
+              "baseCO2": 15.75,
+              "co2Growth": 0.525
+            }
+          ]
+        },
+        {
+          "name": "Device Firmware Update",
+          "repoName": "device-firmware",
+          "branch": "main",
+          "cloudProvider": "AWS",
+          "tags": ["projectD"],
+          "baseRunTime": 1800,
+          "runTimeGrowth": 60,
+          "baseCO2": 90,
+          "co2Growth": 3,
+          "steps": [
+            {
+              "name": "Source",
+              "type": "integration",
+              "subType": "source",
+              "baseTime": 30,
+              "timeGrowth": 1,
+              "baseCO2": 1.5,
+              "co2Growth": 0.05
+            },
+            {
+              "name": "Compile Firmware",
+              "type": "integration",
+              "subType": "build",
+              "baseTime": 600,
+              "timeGrowth": 20,
+              "baseCO2": 30,
+              "co2Growth": 1
+            },
+            {
+              "name": "Run Simulations",
+              "type": "integration",
+              "subType": "test",
+              "baseTime": 900,
+              "timeGrowth": 30,
+              "baseCO2": 45,
+              "co2Growth": 1.5
+            },
+            {
+              "name": "Package Firmware",
+              "type": "integration",
+              "subType": "package",
+              "baseTime": 180,
+              "timeGrowth": 6,
+              "baseCO2": 9,
+              "co2Growth": 0.3
+            },
+            {
+              "name": "Deploy to Test Devices",
+              "type": "deployment",
+              "subType": "test",
+              "baseTime": 90,
+              "timeGrowth": 3,
+              "baseCO2": 4.5,
+              "co2Growth": 0.15
+            }
+          ]
+        }
+      ],
+      "userFlows": [
+        {
+          "name": "Device Registration",
+          "baseCO2Consumption": 15.0,
+          "co2Growth": 0.1
+        },
+        {
+          "name": "Real-time Monitoring",
+          "baseCO2Consumption": 60.0,
+          "co2Growth": 0.5
+        }
+      ]
     }
   ],
   "cloudProviders": ["AWS", "Azure", "Google Cloud"],
@@ -400,38 +1149,47 @@
     {
       "type": "Lambda",
       "category": "Compute",
-      "cloudProvider": "AWS",
-      "allowedMetrics": ["Daily Runs", "Daily Duration", "Daily CO2 Consumption", "SCI per Call", "Allocated Memory", "Allocated Runtime Duration", "Average Runtime Duration"]
+      "cloudProvider": "AWS"
     },
     {
       "type": "DynamoDB",
       "category": "Databases",
-      "cloudProvider": "AWS",
-      "allowedMetrics": ["Daily Storage Size", "Daily Reads", "Daily Writes", "Daily CO2 Consumption", "SCI per Call", "Average Item Size"]
+      "cloudProvider": "AWS"
     },
     {
       "type": "S3",
       "category": "Storage",
-      "cloudProvider": "AWS",
-      "allowedMetrics": ["Daily Storage Size", "Daily Requests", "Daily CO2 Consumption", "SCI per Request", "Average Item Size"]
+      "cloudProvider": "AWS"
     },
     {
       "type": "EKS",
       "category": "Compute",
-      "cloudProvider": "AWS",
-      "allowedMetrics": ["Daily CPU-Time all Pods", "Daily Network In", "Daily Network Out", "Daily CO2 Consumption", "Daily RAM Usage", "Daily PVC"]
+      "cloudProvider": "AWS"
     },
     {
       "type": "AppService",
       "category": "Compute",
-      "cloudProvider": "Azure",
-      "allowedMetrics": ["Daily Requests", "Daily CPU Time", "Daily CO2 Consumption", "Average Response Time", "SCI per Request", "Memory Usage"]
+      "cloudProvider": "Azure"
     },
     {
       "type": "CosmosDB",
       "category": "Databases",
-      "cloudProvider": "Azure",
-      "allowedMetrics": ["Daily Storage Size", "Daily Requests", "Daily CO2 Consumption", "SCI per Request", "Average Item Size", "Provisioned Throughput"]
+      "cloudProvider": "Azure"
+    },
+    {
+      "type": "EMR",
+      "category": "Compute",
+      "cloudProvider": "AWS"
+    },
+    {
+      "type": "EC2",
+      "category": "Compute",
+      "cloudProvider": "AWS"
+    },
+    {
+      "type": "IoT Core",
+      "category": "Compute",
+      "cloudProvider": "AWS"
     }
   ]
 }

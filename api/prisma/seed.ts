@@ -4,6 +4,7 @@ import {
   CicdStepName,
   IntegrationSubStepName,
   DeploymentSubStepName,
+  InfrastructureElementCategory
 } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -37,15 +38,25 @@ async function cleanDatabase() {
   console.log('Database cleaned');
 }
 
-function generateValue(baseValue, growth, day) {
-  if (typeof baseValue === 'object') {
-    return Object.entries(baseValue).reduce((acc, [key, value]) => {
-      // @ts-ignore
-      acc[key] = Math.round(value + (growth[key] * day) / 7);
-      return acc;
-    }, {});
+function generateValue(baseValue: number, growth: number, day: number, variance = 0): number {
+  const baseGrowth = baseValue + (growth * day) / 7;
+  const varianceFactor = 1 + (Math.random() * 2 - 1) * variance;
+  return baseGrowth * varianceFactor;
+}
+
+function getCategoryEnum(category: string): InfrastructureElementCategory {
+  switch (category) {
+    case 'Compute':
+      return InfrastructureElementCategory.Compute;
+    case 'Storage':
+      return InfrastructureElementCategory.Storage;
+    case 'Databases':
+      return InfrastructureElementCategory.Databases;
+    case 'Networking':
+      return InfrastructureElementCategory.Networking;
+    default:
+      throw new Error(`Invalid category: ${category}`);
   }
-  return baseValue + (growth * day) / 7;
 }
 
 async function main() {
@@ -54,9 +65,9 @@ async function main() {
 
   const seedDataPath = path.join(__dirname, 'seed-data.json');
   let seedData: {
-    cloudProviders: any;
-    infrastructureServices: any;
-    projects: any;
+    cloudProviders: string[];
+    infrastructureServices: any[];
+    projects: any[];
   };
   try {
     const rawData = fs.readFileSync(seedDataPath, 'utf-8');
@@ -67,7 +78,7 @@ async function main() {
   }
 
   // Seed Cloud Providers
-  const cloudProviders = {};
+  const cloudProviders: { [key: string]: any } = {};
   for (const providerName of seedData.cloudProviders) {
     const provider = await prisma.cloudProvider.create({
       data: { name: providerName },
@@ -77,16 +88,20 @@ async function main() {
   console.log('Cloud Providers seeded');
 
   // Seed Infrastructure Services
-  const infrastructureServices = {};
+  const infrastructureServices: { [key: string]: any } = {};
   for (const service of seedData.infrastructureServices) {
-    const createdService = await prisma.infrastructureService.create({
-      data: {
-        type: service.type,
-        category: service.category,
-        cloudProviderId: cloudProviders[service.cloudProvider].id,
-      },
-    });
-    infrastructureServices[service.type] = createdService;
+    try {
+      const createdService = await prisma.infrastructureService.create({
+        data: {
+          type: service.type,
+          category: getCategoryEnum(service.category),
+          cloudProviderId: cloudProviders[service.cloudProvider].id,
+        },
+      });
+      infrastructureServices[service.type] = createdService;
+    } catch (error) {
+      console.error(`Error creating infrastructure service ${service.type}:`, error);
+    }
   }
   console.log('Infrastructure Services seeded');
 
@@ -128,7 +143,7 @@ async function main() {
 
       // Seed Consumption Data
       const co2Metric = element.metrics.find(
-        (m) => m.name === 'Daily CO2 Consumption',
+        (m: any) => m.name === 'Daily CO2 Consumption',
       );
       for (let day = 0; day < NUM_WEEKS * 7; day++) {
         const date = new Date();
@@ -142,6 +157,7 @@ async function main() {
               co2Metric.baseValue,
               co2Metric.growth,
               day,
+              co2Metric.variance,
             ),
           },
         });
@@ -149,7 +165,7 @@ async function main() {
 
       // Seed Metric Values (excluding CO2 consumption)
       for (const metric of element.metrics.filter(
-        (m) => m.name !== 'Daily CO2 Consumption',
+        (m: any) => m.name !== 'Daily CO2 Consumption',
       )) {
         let metricDefinition =
           await prisma.operationsMetricDefinition.findFirst({
@@ -166,18 +182,32 @@ async function main() {
           });
         }
 
-        // Create AllowedMetric
-        await prisma.allowedMetric.create({
-          data: {
+        // Create or connect AllowedMetric
+        const existingAllowedMetric = await prisma.allowedMetric.findFirst({
+          where: {
             infrastructureServiceId: service.id,
             metricDefinitionId: metricDefinition.id,
           },
         });
 
+        if (!existingAllowedMetric) {
+          await prisma.allowedMetric.create({
+            data: {
+              infrastructureServiceId: service.id,
+              metricDefinitionId: metricDefinition.id,
+            },
+          });
+        }
+
         for (let day = 0; day < NUM_WEEKS * 7; day++) {
           const date = new Date();
           date.setDate(date.getDate() - (NUM_WEEKS * 7 - day));
-          const value = generateValue(metric.baseValue, metric.growth, day);
+          const value = generateValue(
+            metric.baseValue,
+            metric.growth,
+            day,
+            metric.variance,
+          );
 
           await prisma.operationsMetricValue.create({
             data: {
@@ -218,12 +248,12 @@ async function main() {
         startDate.setDate(startDate.getDate() - (NUM_WEEKS - week) * 7);
         const endDate = new Date(
           startDate.getTime() +
-            generateValue(
-              pipelineData.baseRunTime,
-              pipelineData.runTimeGrowth,
-              week * 7,
-            ) *
-              1000,
+          generateValue(
+            pipelineData.baseRunTime,
+            pipelineData.runTimeGrowth,
+            week * 7,
+          ) *
+          1000,
         );
 
         const pipelineRun = await prisma.cicdPipelineRun.create({
@@ -235,46 +265,39 @@ async function main() {
           },
         });
 
-        await prisma.cicdPipelineStepMeasurement.createMany({
-          data: [
-            {
+        // Seed CICD Pipeline Step Measurements
+        for (const step of pipelineData.steps) {
+          const stepName =
+            step.type === 'integration'
+              ? CicdStepName.integration
+              : CicdStepName.deployment;
+
+          let integrationSubStepName: IntegrationSubStepName | null = null;
+          let deploymentStage: DeploymentSubStepName | null = null;
+
+          if (step.type === 'integration') {
+            integrationSubStepName = IntegrationSubStepName[step.subType as keyof typeof IntegrationSubStepName];
+          } else {
+            deploymentStage = DeploymentSubStepName[step.subType as keyof typeof DeploymentSubStepName];
+          }
+
+          await prisma.cicdPipelineStepMeasurement.create({
+            data: {
               cicdPipelineRunId: pipelineRun.id,
-              stepName: CicdStepName.integration,
-              integrationSubStepName: IntegrationSubStepName.build,
+              stepName: stepName,
+              integrationSubStepName: integrationSubStepName,
+              deploymentStage: deploymentStage,
               duration: Math.round(
-                generateValue(
-                  pipelineData.baseRunTime,
-                  pipelineData.runTimeGrowth,
-                  week * 7,
-                ) * 0.6,
+                generateValue(step.baseTime, step.timeGrowth, week * 7),
               ),
-              co2Consumption:
-                generateValue(
-                  pipelineData.baseCO2,
-                  pipelineData.co2Growth,
-                  week * 7,
-                ) * 0.6,
-            },
-            {
-              cicdPipelineRunId: pipelineRun.id,
-              stepName: CicdStepName.deployment,
-              deploymentStage: DeploymentSubStepName.prod,
-              duration: Math.round(
-                generateValue(
-                  pipelineData.baseRunTime,
-                  pipelineData.runTimeGrowth,
-                  week * 7,
-                ) * 0.4,
+              co2Consumption: generateValue(
+                step.baseCO2,
+                step.co2Growth,
+                week * 7,
               ),
-              co2Consumption:
-                generateValue(
-                  pipelineData.baseCO2,
-                  pipelineData.co2Growth,
-                  week * 7,
-                ) * 0.4,
             },
-          ],
-        });
+          });
+        }
       }
     }
 
