@@ -43,16 +43,16 @@ cd sosd-backend
 
    Open your browser and go to `http://localhost:8080`. You can log in using the following credentials:
 
-    - **Server**: `mysql`
-    - **Username**: `root`
-    - **Password**: `root_password`
+   - **Server**: `mysql`
+   - **Username**: `root`
+   - **Password**: `root_password`
 
    Note: You can change these credentials in the `docker-compose.yml` file if needed.
 
 4. Import the `sosd_schema`:
 
-    - Click on the `Import` tab in phpMyAdmin.
-    - Select the `sosd_schema.sql` file from the `database` directory and import it.
+   - Click on the `Import` tab in phpMyAdmin.
+   - Select the `sosd_schema.sql` file from the `database` directory and import it.
 
 ### Setting up the API
 
@@ -87,6 +87,16 @@ cd sosd-backend
     ```
 
    This will start the API server in development mode.
+
+5. Seed the database with example data:
+
+   After starting the API server, run the following command to seed the database:
+
+    ```sh
+    npx prisma db seed
+    ```
+
+   This will populate your database with example data defined in the `prisma/seed.ts` file.
 
 ### Testing the API
 
