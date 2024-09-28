@@ -24,6 +24,11 @@ export class CicdService {
   @Inject(PrismaService)
   private prismaService: PrismaService;
 
+  /**
+   * Creates a new CI/CD pipeline.
+   * @param createDto - Data transfer object containing the details for the new pipeline.
+   * @returns The created CI/CD pipeline.
+   */
   async createPipeline(
     createDto: CreateCicdPipelineDto,
   ): Promise<CicdPipelineDto> {
@@ -47,6 +52,12 @@ export class CicdService {
     };
   }
 
+  /**
+   * Retrieves a CI/CD pipeline by its ID.
+   * @param pipelineId - The ID of the pipeline to retrieve.
+   * @returns The CI/CD pipeline.
+   * @throws NotFoundException if the pipeline is not found.
+   */
   async getPipeline(pipelineId: number): Promise<CicdPipelineDto> {
     const pipeline = await this.prismaService.cicdPipeline.findUnique({
       where: { id: pipelineId },
@@ -71,6 +82,13 @@ export class CicdService {
     };
   }
 
+  /**
+   * Creates a new run for a CI/CD pipeline.
+   * @param pipelineId - The ID of the pipeline to create a run for.
+   * @param createDto - Data transfer object containing the details for the new pipeline run.
+   * @returns The created CI/CD pipeline run.
+   * @throws NotFoundException if the pipeline is not found.
+   */
   async createPipelineRun(
     pipelineId: number,
     createDto: CreateCicdPipelineRunDto,
@@ -93,6 +111,11 @@ export class CicdService {
     return { ...pipelineRun, totalCo2: 0 };
   }
 
+  /**
+   * Retrieves all runs for a CI/CD pipeline.
+   * @param pipelineId - The ID of the pipeline to retrieve runs for.
+   * @returns An array of CI/CD pipeline runs.
+   */
   async getPipelineRuns(pipelineId: number): Promise<CicdPipelineRunDto[]> {
     const pipelineRuns = await this.prismaService.cicdPipelineRun.findMany({
       where: {
@@ -109,6 +132,15 @@ export class CicdService {
     }));
   }
 
+  /**
+   * Creates a new step measurement for a CI/CD pipeline run.
+   * @param pipelineId - The ID of the pipeline.
+   * @param runId - The ID of the pipeline run.
+   * @param createDto - Data transfer object containing the details for the new step measurement.
+   * @returns The created CI/CD pipeline step measurement.
+   * @throws NotFoundException if the pipeline run is not found.
+   * @throws BadRequestException if the step name, integration sub-step name, or deployment stage is invalid.
+   */
   async createStepMeasurement(
     pipelineId: number,
     runId: number,
@@ -164,6 +196,13 @@ export class CicdService {
     });
   }
 
+  /**
+   * Retrieves all step measurements for a CI/CD pipeline run.
+   * @param pipelineId - The ID of the pipeline.
+   * @param runId - The ID of the pipeline run.
+   * @returns An array of CI/CD pipeline step measurements.
+   * @throws NotFoundException if the pipeline run is not found.
+   */
   async getStepMeasurements(
     pipelineId: number,
     runId: number,
@@ -187,6 +226,12 @@ export class CicdService {
     return pipelineRun.cicdPipelineStepMeasurements;
   }
 
+  /**
+   * Retrieves CI/CD pipelines by tags.
+   * @param tags - An array of tags to filter pipelines by.
+   * @param matchAll - Whether to match all tags (AND) or any tag (OR). Defaults to false (OR).
+   * @returns An array of CI/CD pipelines.
+   */
   async getPipelinesByTags(
     tags: string[],
     matchAll: boolean = false,
@@ -233,6 +278,11 @@ export class CicdService {
     return Promise.all(pipelines.map(this.mapToCicdPipelineDto.bind(this)));
   }
 
+  /**
+   * Maps a pipeline entity to a CI/CD pipeline DTO.
+   * @param pipeline - The pipeline entity to map.
+   * @returns The mapped CI/CD pipeline DTO.
+   */
   private async mapToCicdPipelineDto(pipeline: any): Promise<CicdPipelineDto> {
     const weeklyCo2Consumption = await this.calculateWeeklyCo2Consumption(
       pipeline.id,
@@ -257,6 +307,11 @@ export class CicdService {
     };
   }
 
+  /**
+   * Calculates the weekly CO2 consumption for a pipeline.
+   * @param pipelineId - The ID of the pipeline.
+   * @returns The weekly CO2 consumption.
+   */
   private async calculateWeeklyCo2Consumption(
     pipelineId: number,
   ): Promise<number> {
@@ -281,6 +336,11 @@ export class CicdService {
     );
   }
 
+  /**
+   * Calculates the CO2 consumption for the last run of a pipeline.
+   * @param lastRun - The last run of the pipeline.
+   * @returns A tuple containing the integration and deployment CO2 consumption.
+   */
   private calculateLastRunConsumption(lastRun: any): [number, number] {
     if (!lastRun) return [0, 0];
 
@@ -297,6 +357,11 @@ export class CicdService {
     return [integrationConsumption, deploymentConsumption];
   }
 
+  /**
+   * Calculates the total CO2 consumption for a pipeline.
+   * @param pipeline - The pipeline entity.
+   * @returns The total CO2 consumption.
+   */
   private calculateTotalCo2ForPipeline(pipeline: any): number {
     return pipeline.cicdPipelineRuns.reduce(
       (total: number, run: any) => total + this.calculateTotalCo2ForRun(run),
@@ -304,6 +369,11 @@ export class CicdService {
     );
   }
 
+  /**
+   * Calculates the total CO2 consumption for a pipeline run.
+   * @param run - The pipeline run entity.
+   * @returns The total CO2 consumption.
+   */
   private calculateTotalCo2ForRun(run: any): number {
     return run.cicdPipelineStepMeasurements.reduce(
       (total: number, measurement: any) => total + measurement.co2Consumption,

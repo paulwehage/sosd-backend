@@ -13,6 +13,12 @@ import {
 export class ProjectService {
   constructor(private prismaService: PrismaService) {}
 
+  /**
+   * Maps a project entity to a ProjectDto.
+   * @param project - The project entity to map.
+   * @param sdlcOverview - Optional SDLC overview data.
+   * @returns The mapped ProjectDto.
+   */
   private mapToDto(
     project: Project & { tags: Tag[] },
     sdlcOverview?: SdlcOverviewDto,
@@ -24,6 +30,10 @@ export class ProjectService {
     };
   }
 
+  /**
+   * Retrieves all projects.
+   * @returns An array of ProjectDto.
+   */
   async findAll(): Promise<ProjectDto[]> {
     const projects = await this.prismaService.project.findMany({
       include: { tags: true },
@@ -31,6 +41,12 @@ export class ProjectService {
     return projects.map((project) => this.mapToDto(project));
   }
 
+  /**
+   * Retrieves a project by its ID.
+   * @param id - The ID of the project to retrieve.
+   * @returns The ProjectDto.
+   * @throws NotFoundException if the project is not found.
+   */
   async findOne(id: number): Promise<ProjectDto> {
     const project = await this.prismaService.project.findUnique({
       where: { id },
@@ -45,6 +61,11 @@ export class ProjectService {
     return this.mapToDto(project, sdlcOverview);
   }
 
+  /**
+   * Creates a new project.
+   * @param createProjectDto - Data transfer object containing the details for the new project.
+   * @returns The created ProjectDto.
+   */
   async create(createProjectDto: CreateProjectDto): Promise<ProjectDto> {
     const { tags, ...projectData } = createProjectDto;
     const project = await this.prismaService.project.create({
@@ -62,6 +83,12 @@ export class ProjectService {
     return this.mapToDto(project);
   }
 
+  /**
+   * Updates an existing project.
+   * @param id - The ID of the project to update.
+   * @param updateProjectDto - Data transfer object containing the updated details for the project.
+   * @returns The updated ProjectDto.
+   */
   async update(
     id: number,
     updateProjectDto: UpdateProjectDto,
@@ -86,10 +113,21 @@ export class ProjectService {
     return this.mapToDto(project);
   }
 
+  /**
+   * Deletes a project by its ID.
+   * @param id - The ID of the project to delete.
+   * @returns void
+   */
   async remove(id: number): Promise<void> {
     await this.prismaService.project.delete({ where: { id } });
   }
 
+  /**
+   * Retrieves the SDLC overview for a project.
+   * @param projectId - The ID of the project.
+   * @returns The SDLC overview data.
+   * @throws NotFoundException if the project is not found.
+   */
   async getSdlcOverview(projectId: number): Promise<SdlcOverviewDto> {
     const project = await this.prismaService.project.findUnique({
       where: { id: projectId },

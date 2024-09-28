@@ -5,8 +5,12 @@ import { PrismaService } from './prisma.service';
 export class HistoricalDataService {
   constructor(private prisma: PrismaService) {}
 
-  // Public Methods
-
+  /**
+   * Retrieves cross-project historical data within a specified date range.
+   * @param startDate - The start date of the range in ISO-8601 format.
+   * @param endDate - The end date of the range in ISO-8601 format.
+   * @returns An array of aggregated project data.
+   */
   async getCrossProjectHistoricalData(startDate: string, endDate: string) {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -38,6 +42,13 @@ export class HistoricalDataService {
     return result;
   }
 
+  /**
+   * Retrieves SDLC historical data for a project within a specified date range.
+   * @param tags - An array of tags to filter the project.
+   * @param startDate - The start date of the range in ISO-8601 format.
+   * @param endDate - The end date of the range in ISO-8601 format.
+   * @returns An array of aggregated SDLC data.
+   */
   async getProjectSdlcHistoricalData(
     tags: string[],
     startDate: string,
@@ -54,6 +65,13 @@ export class HistoricalDataService {
     return this.aggregateSdlcData(cicdData, opsData, start, end);
   }
 
+  /**
+   * Retrieves operations historical data for a project within a specified date range.
+   * @param tags - An array of tags to filter the project.
+   * @param startDate - The start date of the range in ISO-8601 format.
+   * @param endDate - The end date of the range in ISO-8601 format.
+   * @returns An array of aggregated operations data.
+   */
   async getProjectOperationsHistoricalData(
     tags: string[],
     startDate: string,
@@ -68,6 +86,13 @@ export class HistoricalDataService {
     return this.aggregateOperationsData(operationsData, start, end);
   }
 
+  /**
+   * Retrieves CI/CD historical data for a project within a specified date range.
+   * @param tags - An array of tags to filter the project.
+   * @param startDate - The start date of the range in ISO-8601 format.
+   * @param endDate - The end date of the range in ISO-8601 format.
+   * @returns An array of aggregated CI/CD data.
+   */
   async getProjectCicdHistoricalData(
     tags: string[],
     startDate: string,
@@ -82,6 +107,15 @@ export class HistoricalDataService {
     return this.aggregateCicdDataByPipeline(cicdData, start, end);
   }
 
+  /**
+   * Retrieves historical data for a specific service within a project.
+   * @param tags - An array of tags to filter the project.
+   * @param serviceId - The ID of the service.
+   * @param startDate - The start date of the range in ISO-8601 format.
+   * @param endDate - The end date of the range in ISO-8601 format.
+   * @returns An array of aggregated service data.
+   * @throws NotFoundException if the service is not found.
+   */
   async getProjectServiceHistoricalData(
     tags: string[],
     serviceId: string,
@@ -110,6 +144,15 @@ export class HistoricalDataService {
     return this.aggregateServiceData(service, filteredOpsData, start, end);
   }
 
+  /**
+   * Retrieves historical data for a specific pipeline within a project.
+   * @param tags - An array of tags to filter the project.
+   * @param pipelineId - The ID of the pipeline.
+   * @param startDate - The start date of the range in ISO-8601 format.
+   * @param endDate - The end date of the range in ISO-8601 format.
+   * @returns An array of aggregated pipeline data.
+   * @throws NotFoundException if the pipeline is not found.
+   */
   async getProjectPipelineHistoricalData(
     tags: string[],
     pipelineId: string,
@@ -143,9 +186,12 @@ export class HistoricalDataService {
     return this.aggregatePipelineData(pipeline, start, end);
   }
 
-  // Private Methods
-
-  // Validation Methods
+  /**
+   * Validates the provided start and end dates.
+   * @param startDate - The start date to validate.
+   * @param endDate - The end date to validate.
+   * @throws Error if the dates are invalid.
+   */
   private validateDates(startDate: Date, endDate: Date) {
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       throw new Error(
@@ -154,6 +200,12 @@ export class HistoricalDataService {
     }
   }
 
+  /**
+   * Validates the provided service ID.
+   * @param serviceId - The service ID to validate.
+   * @returns The validated service ID as an integer.
+   * @throws Error if the service ID is invalid.
+   */
   private validateServiceId(serviceId: string): number {
     const serviceIdInt = parseInt(serviceId, 10);
     if (isNaN(serviceIdInt)) {
@@ -162,6 +214,12 @@ export class HistoricalDataService {
     return serviceIdInt;
   }
 
+  /**
+   * Validates the provided pipeline ID.
+   * @param pipelineId - The pipeline ID to validate.
+   * @returns The validated pipeline ID as an integer.
+   * @throws Error if the pipeline ID is invalid.
+   */
   private validatePipelineId(pipelineId: string): number {
     const pipelineIdInt = parseInt(pipelineId, 10);
     if (isNaN(pipelineIdInt)) {
@@ -170,7 +228,13 @@ export class HistoricalDataService {
     return pipelineIdInt;
   }
 
-  // Data Fetching Methods
+  /**
+   * Fetches CI/CD data for the specified tags and date range.
+   * @param tags - An array of tags to filter the data.
+   * @param startDate - The start date of the range.
+   * @param endDate - The end date of the range.
+   * @returns An array of CI/CD data.
+   */
   private async getCicdData(tags: string[], startDate: Date, endDate: Date) {
     return this.prisma.cicdPipeline.findMany({
       where: {
@@ -189,6 +253,14 @@ export class HistoricalDataService {
     });
   }
 
+  /**
+   * Fetches operations data for the specified tags and date range.
+   * @param tags - An array of tags to filter the data.
+   * @param startDate - The start date of the range.
+   * @param endDate - The end date of the range.
+   * @returns An array of operations data.
+   * @throws Error if there is an issue fetching the data.
+   */
   private async getOperationsData(
     tags: string[],
     startDate: Date,
@@ -221,7 +293,15 @@ export class HistoricalDataService {
     }
   }
 
-  // Aggregation Methods
+  /**
+   * Aggregates project data for the specified date range.
+   * @param project - The project entity.
+   * @param cicdData - The CI/CD data.
+   * @param opsData - The operations data.
+   * @param startDate - The start date of the range.
+   * @param endDate - The end date of the range.
+   * @returns An array of aggregated project data.
+   */
   private aggregateProjectData(
     project,
     cicdData,
@@ -251,6 +331,14 @@ export class HistoricalDataService {
     return result;
   }
 
+  /**
+   * Aggregates SDLC data for the specified date range.
+   * @param cicdData - The CI/CD data.
+   * @param opsData - The operations data.
+   * @param startDate - The start date of the range.
+   * @param endDate - The end date of the range.
+   * @returns An array of aggregated SDLC data.
+   */
   private aggregateSdlcData(cicdData, opsData, startDate: Date, endDate: Date) {
     const result = [];
     const currentDate = new Date(startDate);
@@ -279,6 +367,13 @@ export class HistoricalDataService {
     return result;
   }
 
+  /**
+   * Aggregates operations data for the specified date range.
+   * @param operationsData - The operations data.
+   * @param startDate - The start date of the range.
+   * @param endDate - The end date of the range.
+   * @returns An array of aggregated operations data.
+   */
   private aggregateOperationsData(
     operationsData,
     startDate: Date,
@@ -317,6 +412,13 @@ export class HistoricalDataService {
     return result;
   }
 
+  /**
+   * Aggregates CI/CD data by pipeline for the specified date range.
+   * @param cicdData - The CI/CD data.
+   * @param startDate - The start date of the range.
+   * @param endDate - The end date of the range.
+   * @returns An array of aggregated CI/CD data by pipeline.
+   */
   private aggregateCicdDataByPipeline(
     cicdData,
     startDate: Date,
@@ -348,6 +450,14 @@ export class HistoricalDataService {
     return result;
   }
 
+  /**
+   * Aggregates service data for the specified date range.
+   * @param service - The service entity.
+   * @param opsData - The operations data.
+   * @param startDate - The start date of the range.
+   * @param endDate - The end date of the range.
+   * @returns An array of aggregated service data.
+   */
   private aggregateServiceData(
     service,
     opsData,
@@ -375,6 +485,13 @@ export class HistoricalDataService {
     return result;
   }
 
+  /**
+   * Aggregates pipeline data for the specified date range.
+   * @param pipeline - The pipeline entity.
+   * @param startDate - The start date of the range.
+   * @param endDate - The end date of the range.
+   * @returns An array of aggregated pipeline data.
+   */
   private aggregatePipelineData(pipeline, startDate: Date, endDate: Date) {
     const result = [];
     const currentDate = new Date(startDate);
@@ -397,13 +514,24 @@ export class HistoricalDataService {
     return result;
   }
 
-  // Calculation Methods
+  /**
+   * Calculates the daily CO2 consumption for CI/CD data.
+   * @param cicdData - The CI/CD data.
+   * @param date - The date to calculate for.
+   * @returns The total daily CO2 consumption.
+   */
   private calculateDailyCicdCo2(cicdData, date: Date) {
     return cicdData.reduce((total, pipeline) => {
       return total + this.calculateDailyCicdCo2ForPipeline(pipeline, date);
     }, 0);
   }
 
+  /**
+   * Calculates the daily CO2 consumption for a specific pipeline.
+   * @param pipeline - The pipeline entity.
+   * @param date - The date to calculate for.
+   * @returns The total daily CO2 consumption for the pipeline.
+   */
   private calculateDailyCicdCo2ForPipeline(pipeline, date: Date) {
     const dailyRuns = pipeline.cicdPipelineRuns.filter(
       (run) =>
@@ -423,6 +551,12 @@ export class HistoricalDataService {
     );
   }
 
+  /**
+   * Calculates the daily CO2 consumption for operations data.
+   * @param opsData - The operations data.
+   * @param date - The date to calculate for.
+   * @returns The total daily CO2 consumption for operations.
+   */
   private calculateDailyOpsCo2(opsData, date: Date) {
     return opsData.reduce((total, element) => {
       const dailyConsumption = element.consumptions.find(
