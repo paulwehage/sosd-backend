@@ -3,11 +3,6 @@ generator client {
   output   = "../node_modules/.prisma/client"
 }
 
-generator erd {
-  provider = "prisma-erd-generator"
-  output   = "../../docs/erd.svg"
-}
-
 datasource db {
   provider     = "mysql"
   url          = env("DATABASE_URL")
@@ -55,11 +50,11 @@ enum IntegrationSubStepName {
 }
 
 model Project {
-  id          Int      @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   name        String
   description String
-  createdAt   DateTime @default(now()) @map("created_at")
-  lastUpdated DateTime @updatedAt
+  createdAt   DateTime   @default(now()) @map("created_at")
+  lastUpdated DateTime   @updatedAt
   tags        Tag[]
   userFlows   UserFlow[]
 
@@ -67,10 +62,10 @@ model Project {
 }
 
 model Tag {
-  id        Int       @id @default(autoincrement())
-  name      String
-  projects  Project[]
-  pipelines CicdPipeline[]
+  id                     Int                               @id @default(autoincrement())
+  name                   String
+  projects               Project[]
+  pipelines              CicdPipeline[]
   infrastructureElements OperationsInfrastructureElement[]
 
   @@unique([name])
@@ -78,8 +73,8 @@ model Tag {
 }
 
 model SdlcStep {
-  id               Int               @id @default(autoincrement())
-  name             SdlcStepName      @unique
+  id   Int          @id @default(autoincrement())
+  name SdlcStepName @unique
 
   @@map("sdlc_steps")
 }
@@ -232,5 +227,3 @@ model AllowedMetric {
   @@index([metricDefinitionId])
   @@map("allowed_metrics")
 }
-
-
