@@ -19,7 +19,7 @@ import {
 import { OperationsService } from '../services/operations.service';
 import {
   AllowedMetricDto,
-  CreateInfrastructureElementDto,
+  CreateInfrastructureElementDto, CreateInfrastructureServiceDto,
   CreateMetricDefinitionDto,
   CreateMetricValueDto,
   InfrastructureElementDto,
@@ -32,6 +32,19 @@ import {
 @Controller('/operations')
 export class OperationsController {
   constructor(private readonly operationsService: OperationsService) {}
+
+  @Post('infrastructure-services')
+  @ApiOperation({ summary: 'Create a new infrastructure service' })
+  @ApiResponse({
+    status: 201,
+    description: 'The infrastructure service has been successfully created.',
+    type: InfrastructureServiceDto,
+  })
+  async createInfrastructureService(
+    @Body() createDto: CreateInfrastructureServiceDto,
+  ): Promise<InfrastructureServiceDto> {
+    return this.operationsService.createInfrastructureService(createDto);
+  }
 
   @Post('infrastructure-elements')
   @ApiOperation({ summary: 'Create a new infrastructure element' })

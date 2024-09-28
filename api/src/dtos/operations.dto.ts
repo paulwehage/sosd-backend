@@ -189,3 +189,23 @@ export class MetricDefinitionDto {
   })
   applicableServices: InfrastructureServiceDto[];
 }
+
+export class CreateInfrastructureServiceDto {
+  @ApiProperty({ description: 'Type of the infrastructure service' })
+  @IsString()
+  @IsNotEmpty()
+  type: string;
+
+  @ApiProperty({
+    description: 'Category of the infrastructure service',
+    enum: InfrastructureElementCategory,
+  })
+  @IsEnum(InfrastructureElementCategory)
+  @IsNotEmpty()
+  category: InfrastructureElementCategory;
+
+  @ApiProperty({ description: 'Name of the cloud provider' })
+  @IsString()
+  @IsNotEmpty()
+  cloudProvider: string;
+}

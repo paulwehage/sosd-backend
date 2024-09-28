@@ -7,6 +7,7 @@ import {
 import {
   AllowedMetricDto,
   CreateInfrastructureElementDto,
+  CreateInfrastructureServiceDto,
   CreateMetricDefinitionDto,
   CreateMetricValueDto,
   DetailedInfrastructureElementDto,
@@ -459,5 +460,35 @@ export class OperationsService {
       console.warn(`Failed to parse JSON: ${jsonString}. Using default value.`);
       return defaultValue;
     }
+  }
+
+  async createInfrastructureService(
+    createDto: CreateInfrastructureServiceDto,
+  ): Promise<InfrastructureServiceDto> {
+    const cloudProvider = await this.prismaService.cloudProvider.findUnique({
+      where: { name: createDto.cloudProvider },
+    });
+
+    if (!cloudProvider) {
+      throw new NotFoundException(
+        `Cloud provider ${createDto.cloudProvider} not found`,
+      );
+    }
+
+    const service = await this.prismaService.infrastructureService.create({
+      data: {
+        type: createDto.type,
+        category: createDto.category,
+        cloudProviderId: cloudProvider.id,
+      },
+      include: { cloudProvider: true },
+    });
+
+    return {
+      id: service.id,
+      type: service.type,
+      category: service.category,
+      cloudProvider: service.cloudProvider.name,
+    };
   }
 }

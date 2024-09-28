@@ -1,7 +1,7 @@
 
 # Software Sustainability Dashboard Backend (SOSD)
 
-This repository contains two main directories: `api` and `database`. The `database` directory includes a Docker Compose file for starting a MySQL container and a phpMyAdmin container, along with a database schema `sosd_schema`. The `api` directory contains a NestJS backend application.
+This repository contains two main directories: `api` and `database`. The `database` directory includes a Docker Compose file for starting a MySQL container and a phpMyAdmin container. The `api` directory contains a NestJS and Prisma backend application.
 
 ## Prerequisites
 
@@ -49,10 +49,25 @@ cd sosd-backend
 
    Note: You can change these credentials in the `docker-compose.yml` file if needed.
 
-4. Import the `sosd_schema`:
+4. Prisma Setup:
 
-   - Click on the `Import` tab in phpMyAdmin.
-   - Select the `sosd_schema.sql` file from the `database` directory and import it.
+   1. Go back to the root of the repository and navigate to the `api` directory:
+
+      ```sh
+      cd ../api
+      ```
+
+   2. Run the following command to apply the Prisma schema to the database:
+
+      ```sh
+      npx prisma db push
+      ```
+
+   3. After the migration is applied, you can seed the database with example data:
+
+      ```sh
+      npx prisma db seed
+      ```
 
 ### Setting up the API
 
@@ -68,35 +83,13 @@ cd sosd-backend
     npm install
     ```
 
-3. Configure the environment variables:
-
-   Create a `.env` file in the `api` directory and add the following environment variables:
-
-    ```env
-    DB_HOST=localhost
-    DB_PORT=3306
-    DB_USER=root
-    DB_PASS=password
-    DB_NAME=sosd_db
-    ```
-
-4. Start the NestJS application:
+3. Start the NestJS application:
 
     ```sh
-    npm run start:dev
+    npm run start
     ```
 
    This will start the API server in development mode.
-
-5. Seed the database with example data:
-
-   After starting the API server, run the following command to seed the database:
-
-    ```sh
-    npx prisma db seed
-    ```
-
-   This will populate your database with example data defined in the `prisma/seed.ts` file.
 
 ### Testing the API
 
@@ -112,10 +105,16 @@ The API documentation is available at `http://localhost:3000/api`.
 
 ```plaintext
 ├── api
+│   ├── prisma
+|   |   ├── schema.prisma
+|   |   ├── seed.ts
+|   |   ├── seed-data.json
 │   ├── src
 |   |   ├── controllers
 |   |   ├── services
-|   |   ├── entities
+|   |   ├── dtos
+|   |   ├── app.module.ts
+|   |   ├── main.ts
 │   ├── test
 │   ├── .env.example
 │   ├── nest-cli.json
@@ -124,7 +123,6 @@ The API documentation is available at `http://localhost:3000/api`.
 │   └── tsconfig.build.json
 ├── database
 │   ├── docker-compose.yml
-│   ├── sosd_schema.sql
 └── README.md
 ```
 
